@@ -29,6 +29,8 @@ interface StrategicMetrics {
     theft: {
         total: number;
         impactDays: number;
+        impactNarrative: string;
+        dopamineSwap: string;
     };
     unknowns: {
         comment: string;
@@ -41,6 +43,8 @@ interface StrategicMetrics {
         paid: number;
     }[];
     allocation: {
+        essential: number;
+        lifestyle: number;
         ratio: number;
         score: string;
         adaModifier: boolean;
@@ -58,6 +62,7 @@ interface StrategicMetrics {
         monthsToRecover: number;
         sensitivity: number;
         recoveryTarget: number;
+        recoveryBonus: number;
     };
     revenue: {
         sideHustleEarned: number;
@@ -72,6 +77,10 @@ interface StrategicMetrics {
         cashRemaining: number;
         ironRemaining: number;
         coverageRatio: number;
+        isHardLocked: boolean;
+        bufferReboundPct: number;
+        nextMilestone: number;
+        milestoneProgress: number;
     };
     forecast: {
         nextMonthReadiness: number;
@@ -82,11 +91,6 @@ interface StrategicMetrics {
         archetype: 'Weekend Leak' | 'Impulse Spike' | 'Steady' | 'None';
         highRiskDays: string[];
     };
-    v5: {
-        isHardLocked: boolean;
-        impactNarrative: string;
-        bufferReboundPct: number;
-    };
 }
 
 export default function DecisionClient({ data }: { data: StrategicMetrics }) {
@@ -96,29 +100,17 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
 
     useEffect(() => setIsMounted(true), []);
 
-
     const isLockdown = data.liquidity.status === 'lockdown' && !isAcknowledged;
 
-    // Simulation Logic
-    const currentDebtPaid = simulatedDebtPayment ?? data.freedom.actualDebtPaid;
-    const debtDifference = data.freedom.actualDebtPaid - currentDebtPaid;
-    // If I pay LESS debt, my Available increases, so ADA increases.
-    // ADA Change = DebtDifference / DaysRemaining?
-    // Not exactly, ADA formula treats "Debt Budget" as fixed?
-    // Wait, ADA formula in strategy.ts uses fixed budgets.
-    // The "Sustainability Score" logic suggested we are over-paying.
-    // The simulator should show: "If you reduce debt payment to X, your 'Virtual ADA' becomes Y".
-    // Virtual ADA = Current ADA + (DebtDifference / DaysRemaining).
-    // Let's approximate days remaining from the boost value.
     const daysRemaining = Math.max(1, Math.round(100 / data.revenue.nextBoostValue));
+    const debtDifference = data.freedom.actualDebtPaid - (simulatedDebtPayment ?? data.freedom.actualDebtPaid);
     const virtualADA = data.ada + (debtDifference / daysRemaining);
 
     const adaColor = (simulatedDebtPayment !== null ? virtualADA : data.ada) < 0 ? 'text-red-500' : 'text-emerald-400';
-    const velColor = data.velocity.status === 'ahead' ? 'bg-emerald-500' : 'bg-red-500';
 
     return (
         <div className="p-6 lg:p-8 space-y-8 animate-fade-in max-w-7xl mx-auto relative">
-            {/* Liquidity Lockdown Overlay Effect */}
+            {/* Liquidity Lockdown Overlay */}
             {isLockdown && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
@@ -146,10 +138,10 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-400 to-cyan-500 bg-clip-text text-transparent uppercase tracking-wider">
-                        Command Center <span className="text-xs text-[var(--foreground-muted)] align-top ml-1">V4</span>
+                        Command Center
                     </h1>
                     <p className="text-[var(--foreground-muted)] font-mono text-sm mt-1">
-                        AUTONOMOUS STRATEGIST PREVIEW
+                        AUTONOMOUS STRATEGIST
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -176,7 +168,6 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main ADA (Safe to Spend) HUD */}
                     <div className="lg:col-span-2 glass-card p-8 flex flex-col justify-between relative group overflow-hidden min-h-[300px]">
-                        {/* Background Glow */}
                         <div className={`absolute -right-20 -top-20 w-80 h-80 rounded-full blur-[100px] opacity-20 transition-colors duration-500
                                 ${data.adaStatus === 'crisis' ? 'bg-red-500' : 'bg-emerald-500'}`} />
 
@@ -188,7 +179,6 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                                 <p className="text-xs text-[var(--foreground-muted)] opacity-60">Money you can spend today without worry.</p>
                             </div>
 
-                            {/* Visual Status Badge */}
                             <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border flex items-center gap-2
                                 ${data.adaStatus === 'optimal' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
                                     data.adaStatus === 'warning' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
@@ -201,16 +191,16 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                         <div className="relative z-10 mt-8 mb-8">
                             <div className="flex items-end gap-3">
                                 <h3 className={`text-6xl lg:text-7xl font-black tracking-tighter ${adaColor} transition-all duration-300 whitespace-nowrap`}>
-                                    {data.v5.isHardLocked ? formatCurrency(0) : formatCurrency(simulatedDebtPayment !== null ? virtualADA : data.ada)}
+                                    {data.liquidity.isHardLocked ? formatCurrency(0) : formatCurrency(simulatedDebtPayment !== null ? virtualADA : data.ada)}
                                 </h3>
-                                {data.v5.isHardLocked && (
+                                {data.liquidity.isHardLocked && (
                                     <div className="mb-2 px-2 py-0.5 rounded bg-red-500 text-white text-[10px] font-black uppercase flex items-center gap-1">
                                         <Lock className="w-3 h-3" /> Locked
                                     </div>
                                 )}
                             </div>
                             <p className="text-sm font-medium text-[var(--foreground-muted)] mt-2 flex items-center gap-2">
-                                {data.v5.isHardLocked ? (
+                                {data.liquidity.isHardLocked ? (
                                     <span className="text-red-500 flex items-center gap-1 font-bold animate-pulse"><AlertTriangle className="w-4 h-4" /> SURVIVAL LOCK: Every DH spent today puts your bills at risk.</span>
                                 ) : data.ada >= 0 ? (
                                     <span className="text-emerald-400 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> You're on track.</span>
@@ -240,23 +230,20 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                         </div>
                     </div>
 
-                    {/* Next Month Forecast (Simplified) */}
+                    {/* Next Month Forecast */}
                     <div className="glass-card p-6 flex flex-col justify-between relative group">
                         <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
                         <div>
                             <h2 className="text-sm font-bold text-[var(--foreground-muted)] uppercase tracking-widest mb-1 flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-blue-400" /> Next Month
                             </h2>
                             <p className="text-xs text-[var(--foreground-muted)] opacity-60">Projected Day 1 Balance</p>
                         </div>
-
                         <div className="py-6">
                             <h3 className={`text-3xl font-black ${data.forecast.nextMonthReadiness < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                                 {formatCurrency(data.forecast.nextMonthReadiness)}
                             </h3>
                         </div>
-
                         {data.forecast.nextMonthReadiness < 0 ? (
                             <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl">
                                 <p className="text-xs text-red-300 font-bold flex items-center gap-2 mb-1">
@@ -288,7 +275,7 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Money Wasted (Theft) */}
+                    {/* Money Wasted */}
                     <div className="glass-card p-6 flex flex-col relative group">
                         <h3 className="text-xs font-bold text-[var(--foreground-muted)] uppercase mb-4 flex items-center gap-2">
                             <Trash2 className="w-4 h-4 text-red-500" /> Money Wasted
@@ -310,13 +297,11 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                                     <span className="text-lg font-black text-red-500">{formatCurrency(data.theft.total)}</span>
                                 </div>
                             </div>
-                            <p className="text-[10px] text-center text-[var(--foreground-muted)]">
-                                Money spent on things you didn't plan for.
-                            </p>
+                            <p className="text-[10px] text-center text-[var(--foreground-muted)]">Unplanned spending leaks.</p>
                         </div>
                     </div>
 
-                    {/* Time to Freedom (Recovery) */}
+                    {/* Time to Freedom */}
                     <div className="glass-card p-6 bg-indigo-500/5 flex flex-col justify-center relative overflow-hidden">
                         <div className="relative z-10">
                             <h3 className="text-xs font-bold text-indigo-400 uppercase mb-4 flex items-center gap-2">
@@ -327,36 +312,37 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                                     {data.recovery.monthsToRecover} <span className="text-lg text-[var(--foreground)]">Months</span>
                                 </p>
                                 <p className="text-xs text-[var(--foreground-muted)] opacity-80">
-                                    Recovery Target: <span className="text-white font-bold">{formatCurrency(data.recovery.recoveryTarget)}/mo</span>
+                                    Goal: <span className="text-white font-bold">{formatCurrency(data.recovery.recoveryTarget)}/mo</span>
                                 </p>
                             </div>
-
                             <div className="mt-4 pt-4 border-t border-indigo-500/20 space-y-3">
-                                <div className="p-2 rounded bg-indigo-500/10 border border-indigo-500/20">
-                                    <p className="text-[10px] text-indigo-300 font-bold uppercase mb-1">Command:</p>
-                                    <p className="text-xs text-indigo-100">
-                                        Reduce lifestyle spending or earn extra to hit the <span className="font-bold underline">{formatCurrency(data.recovery.recoveryTarget)}</span> monthly target.
-                                    </p>
+                                <div className="p-2 rounded bg-indigo-500/10 border border-indigo-500/20 text-[10px] text-indigo-100">
+                                    <p className="font-bold uppercase text-indigo-300 mb-1">Command:</p>
+                                    Reduce lifestyle spending to hit target.
                                 </div>
-                                <p className="text-[10px] text-indigo-300">
-                                    <span className="font-bold">Fact:</span> Spending 100 DH adds <span className="font-bold underline">{data.recovery.sensitivity} days</span> to this time.
+                                <p className="text-[10px] text-indigo-300 italic">
+                                    Fact: 100 DH spend = +{data.recovery.sensitivity} days debt.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Impact (Consequence) */}
-                    <div className="glass-card p-6 bg-red-500/5 flex flex-col justify-center">
+                    {/* Real Impact */}
+                    <div className="glass-card p-6 bg-red-500/5 flex flex-col justify-center border-l-2 border-red-500/50">
                         <h3 className="text-xs font-bold text-red-400 uppercase mb-4 flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4" /> Real Impact
                         </h3>
-                        <p className="text-sm font-medium text-[var(--foreground)] leading-relaxed mb-4">
-                            {data.v5.impactNarrative}
+                        <p className="text-sm font-medium text-[var(--foreground)] leading-relaxed mb-4 italic">
+                            {data.theft.impactNarrative}
                         </p>
-                        <div className="w-full bg-[var(--surface)] h-1 rounded-full overflow-hidden">
-                            <div className="bg-red-500 h-full w-[24%]" />
+                        <div className="mt-auto pt-4 border-t border-red-500/10">
+                            <p className="text-[10px] text-red-300 font-bold uppercase mb-2 flex items-center gap-1">
+                                <Zap className="w-3 h-3 text-yellow-400" /> Dopamine Swap:
+                            </p>
+                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-100 italic">
+                                "{data.theft.dopamineSwap}"
+                            </div>
                         </div>
-                        <p className="text-[10px] text-right text-red-400 mt-1 font-mono">{((data.theft.total / 10000) * 100).toFixed(0)}% of Budget Lost</p>
                     </div>
 
                     {/* Top Leaks */}
@@ -366,16 +352,14 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                             {data.unknowns.length > 0 ? (
                                 data.unknowns.slice(0, 3).map((u, i) => (
                                     <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-[var(--surface)] border border-[var(--glass-border)]">
-                                        <span className="text-xs font-medium text-[var(--foreground)] truncate max-w-[100px]">
-                                            {u.comment}
-                                        </span>
+                                        <span className="text-xs font-medium text-[var(--foreground)] truncate max-w-[100px]">{u.comment}</span>
                                         <span className="text-xs font-bold text-red-400">{formatCurrency(u.total)}</span>
                                     </div>
                                 ))
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-6 opacity-40">
                                     <CheckCircle className="w-8 h-8 text-emerald-500 mb-2" />
-                                    <p className="text-[10px] text-[var(--foreground-muted)] uppercase font-bold">No leaks detected</p>
+                                    <p className="text-[10px] text-[var(--foreground-muted)] uppercase font-bold">No leaks</p>
                                 </div>
                             )}
                         </div>
@@ -387,148 +371,104 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
             <section className={`space-y-4 transition-opacity duration-500 ${isLockdown ? 'opacity-20 blur-sm' : ''}`}>
                 <div className="flex items-center gap-2 mb-2">
                     <Target className="w-5 h-5 text-indigo-400" />
-                    <h2 className="text-lg font-bold text-[var(--foreground)] uppercase tracking-wide">Strategic Liabilities</h2>
+                    <h2 className="text-lg font-bold text-[var(--foreground)] uppercase tracking-wide">Strategic Assets & Grade</h2>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Simulator Card - Only show if there is Debt */}
-                    {data.debt.length > 0 ? (
-                        <div className="glass-card p-6">
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <h3 className="text-sm font-bold text-[var(--foreground)] uppercase">Debt Simulator</h3>
-                                    <p className="text-xs text-[var(--foreground-muted)] mt-1">
-                                        What-if: Adjust debt payment to fix ADA difficulty.
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => setSimulatedDebtPayment(data.freedom.survivalNeutralDebt)}
-                                    className="px-3 py-1 bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/30 rounded text-[10px] font-bold uppercase transition-colors"
-                                >
-                                    Set to Neutral Target
-                                </button>
-                            </div>
+                    {/* Buffer Restoration HUD */}
+                    <div className="glass-card p-6 flex flex-col justify-center relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <Shield className="w-24 h-24 text-teal-500" />
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-sm font-bold text-teal-400 uppercase mb-1 flex items-center gap-2">
+                                <Shield className="w-5 h-5" /> Buffer Restoration
+                            </h3>
+                            <p className="text-[10px] text-[var(--foreground-muted)] uppercase mb-6">REBUILDING IRON RESERVES</p>
 
                             <div className="space-y-6">
-                                <div className="relative pt-6 pb-2">
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max={data.freedom.actualDebtPaid * 1.5}
-                                        step="100"
-                                        value={simulatedDebtPayment ?? data.freedom.actualDebtPaid}
-                                        onChange={(e) => setSimulatedDebtPayment(Number(e.target.value))}
-                                        className="w-full h-2 bg-[var(--surface)] rounded-lg appearance-none cursor-pointer accent-teal-500"
-                                    />
-                                    <div className="flex justify-between text-xs font-mono text-[var(--foreground-muted)] mt-2">
-                                        <span>0 DH</span>
-                                        <span>{formatCurrency(simulatedDebtPayment ?? data.freedom.actualDebtPaid)}</span>
-                                        <span>{formatCurrency(data.freedom.actualDebtPaid * 1.5)}</span>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--glass-border)]">
+                                <div className="flex items-end justify-between">
                                     <div>
-                                        <p className="text-[10px] text-[var(--foreground-muted)] uppercase">Projected Savings Impact</p>
-                                        <p className={`text-lg font-bold ${data.freedom.actualDebtPaid > (simulatedDebtPayment ?? 0) ? 'text-emerald-400' : 'text-red-400'}`}>
-                                            {formatCurrency(Math.abs(data.freedom.actualDebtPaid - (simulatedDebtPayment ?? data.freedom.actualDebtPaid)))}
-                                            <span className="text-xs text-[var(--foreground-muted)] ml-1">
-                                                {data.freedom.actualDebtPaid > (simulatedDebtPayment ?? 0) ? 'saved' : 'extra paid'}
-                                            </span>
+                                        <p className="text-xs font-bold text-white mb-1">Iron Solvency</p>
+                                        <p className={`text-2xl font-black ${data.liquidity.coverageRatio >= 100 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                                            {data.liquidity.bufferReboundPct.toFixed(0)}%
                                         </p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[10px] text-[var(--foreground-muted)] uppercase">Survival Neutral Cap</p>
-                                        <p className="text-lg font-bold text-white">{formatCurrency(data.freedom.survivalNeutralDebt)}</p>
+                                        <p className="text-[10px] text-[var(--foreground-muted)] uppercase">Target</p>
+                                        <p className="text-sm font-bold text-[var(--foreground-muted)]">100% Secure</p>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="glass-card p-6 flex flex-col justify-center relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 opacity-10">
-                                <Shield className="w-24 h-24 text-teal-500" />
-                            </div>
-                            <div className="relative z-10">
-                                <h3 className="text-sm font-bold text-teal-400 uppercase mb-1 flex items-center gap-2">
-                                    <Shield className="w-5 h-5" /> Buffer Restoration
-                                </h3>
-                                <p className="text-[10px] text-[var(--foreground-muted)] uppercase mb-6">REBUILDING IRON RESERVES</p>
 
-                                <div className="space-y-6">
-                                    <div className="flex items-end justify-between">
-                                        <div>
-                                            <p className="text-xs font-bold text-white mb-1">Iron Solvency</p>
-                                            <p className={`text-2xl font-black ${data.liquidity.coverageRatio >= 100 ? 'text-emerald-500' : 'text-amber-500'}`}>
-                                                {data.v5.bufferReboundPct.toFixed(0)}%
-                                            </p>
+                                <div className="relative h-6 w-full bg-[var(--surface)] rounded-full overflow-hidden border border-white/5">
+                                    <div
+                                        className={`absolute left-0 top-0 h-full transition-all duration-1000 ${data.liquidity.coverageRatio >= 100 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                        style={{ width: `${Math.max(0, Math.min(100, data.liquidity.bufferReboundPct))}%` }}
+                                    />
+                                    {data.liquidity.bufferReboundPct < 0 && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-red-500/10">
+                                            <span className="text-[10px] font-black text-red-100 uppercase tracking-widest animate-pulse">Deficit State</span>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-[10px] text-[var(--foreground-muted)] uppercase">Target</p>
-                                            <p className="text-sm font-bold text-[var(--foreground-muted)]">100% Secure</p>
-                                        </div>
-                                    </div>
+                                    )}
+                                </div>
 
-                                    <div className="relative h-6 w-full bg-[var(--surface)] rounded-full overflow-hidden border border-white/5">
-                                        <div
-                                            className={`absolute left-0 top-0 h-full transition-all duration-1000 ${data.liquidity.coverageRatio >= 100 ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                                            style={{ width: `${Math.max(0, Math.min(100, data.v5.bufferReboundPct))}%` }}
-                                        />
-                                        {data.v5.bufferReboundPct < 0 && (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-red-500/10">
-                                                <span className="text-[10px] font-black text-red-100 uppercase tracking-widest animate-pulse">Deficit State</span>
+                                <div className="grid grid-cols-2 gap-4 pt-2">
+                                    <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                        <p className="text-[8px] text-[var(--foreground-muted)] uppercase mb-1">Next Milestone</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-xs font-bold text-white">-{data.liquidity.nextMilestone} DH</p>
+                                            <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                                                <div className="h-full bg-teal-500" style={{ width: `${data.liquidity.milestoneProgress}%` }} />
                                             </div>
-                                        )}
+                                        </div>
                                     </div>
-
-                                    <div className="grid grid-cols-2 gap-4 pt-2">
-                                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                                            <p className="text-[8px] text-[var(--foreground-muted)] uppercase mb-1">Cash Gap</p>
-                                            <p className="text-xs font-bold text-white">{formatCurrency(Math.max(0, data.liquidity.ironRemaining - data.liquidity.cashRemaining))}</p>
-                                        </div>
-                                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                                            <p className="text-[8px] text-[var(--foreground-muted)] uppercase mb-1">Goal</p>
-                                            <p className="text-xs font-bold text-emerald-400">Restored</p>
-                                        </div>
+                                    <div className="p-3 rounded-xl bg-teal-500/10 border border-teal-500/20">
+                                        <p className="text-[8px] text-teal-300 uppercase mb-1">Current Gap</p>
+                                        <p className="text-xs font-bold text-white">{formatCurrency(Math.max(0, data.liquidity.ironRemaining - data.liquidity.cashRemaining))}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    )}
+                    </div>
 
-                    {/* Health Grade with Trend */}
-                    <div className="glass-card p-6 flex items-center justify-between">
-                        <div>
-                            <h3 className="text-sm font-bold text-[var(--foreground)] uppercase mb-1">Financial Health Grade</h3>
-                            <div className="flex items-center gap-2 mt-2">
-                                <span className="text-xs text-[var(--foreground-muted)]">Recovery Trend:</span>
-                                {data.allocation.trend === 'improving' ? (
-                                    <span className="flex items-center text-xs font-bold text-emerald-400">
-                                        <TrendingUp className="w-3 h-3 mr-1" /> Improving
-                                    </span>
-                                ) : data.allocation.trend === 'worsening' ? (
-                                    <span className="flex items-center text-xs font-bold text-red-400">
-                                        <TrendingDown className="w-3 h-3 mr-1" /> Worsening
-                                    </span>
-                                ) : (
-                                    <span className="text-xs font-bold text-[var(--foreground-muted)]">Stable</span>
+                    {/* Health Grade */}
+                    <div className="glass-card p-6 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-sm font-bold text-[var(--foreground)] uppercase mb-1">Financial Health Grade</h3>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <span className="text-xs text-[var(--foreground-muted)]">Trend:</span>
+                                    {data.allocation.trend === 'improving' ? (
+                                        <span className="flex items-center text-xs font-bold text-emerald-400"><TrendingUp className="w-3 h-3 mr-1" /> Improving</span>
+                                    ) : data.allocation.trend === 'worsening' ? (
+                                        <span className="flex items-center text-xs font-bold text-red-400"><TrendingDown className="w-3 h-3 mr-1" /> Worsening</span>
+                                    ) : (
+                                        <span className="text-xs font-bold text-[var(--foreground-muted)]">Stable</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-6xl font-black border-4 
+                                ${data.allocation.score === 'A' ? 'border-emerald-500 text-emerald-500 bg-emerald-500/10 shadow-[0_0_30px_rgba(16,185,129,0.2)]' :
+                                    data.allocation.score === 'B' ? 'border-amber-500 text-amber-500 bg-amber-500/10' :
+                                        data.allocation.score === 'C' ? 'border-orange-500 text-orange-500 bg-orange-500/10' :
+                                            'border-red-600 text-red-600 bg-red-600/10'}`}>
+                                {data.allocation.score}
+                            </div>
+                        </div>
+
+                        {data.allocation.adaModifier && (
+                            <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-2">
+                                <p className="text-[10px] text-red-100 font-bold uppercase tracking-wider px-2 py-1 rounded bg-red-500/20 border border-red-500/30 flex items-center w-fit">
+                                    <AlertTriangle className="w-3 h-3 inline mr-1" /> Capped by Negative ADA
+                                </p>
+                                {data.recovery.recoveryBonus > 0 && (
+                                    <div className="px-2 py-1.5 rounded bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-2 w-fit">
+                                        <Zap className="w-4 h-4 text-emerald-400 animate-pulse" />
+                                        <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-widest">Bonus: +{formatCurrency(data.recovery.recoveryBonus)} Potential</span>
+                                    </div>
                                 )}
                             </div>
-
-                            {data.allocation.adaModifier && (
-                                <p className="text-[10px] text-red-400 font-bold mt-2 uppercase tracking-wider">
-                                    <AlertTriangle className="w-3 h-3 inline mr-1" />
-                                    Capped by Negative ADA
-                                </p>
-                            )}
-                        </div>
-                        <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-5xl font-black border-4 
-                            ${data.allocation.score === 'A' ? 'border-emerald-500 text-emerald-500 bg-emerald-500/10' :
-                                data.allocation.score === 'B' ? 'border-amber-500 text-amber-500 bg-amber-500/10' :
-                                    data.allocation.score === 'C' ? 'border-orange-500 text-orange-500 bg-orange-500/10' :
-                                        'border-red-600 text-red-600 bg-red-600/10'}`}>
-                            {data.allocation.score}
-                        </div>
+                        )}
                     </div>
                 </div>
             </section>
