@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💎 FinTrack Dashboard
 
-## Getting Started
+A premium, glassmorphic personal finance tracker built with **Next.js**, **SQLite**, and **Recharts**. Track your spending, manage budgets, and visualize your financial health with a state-of-the-art interface.
 
-First, run the development server:
+![Dashboard Preview](public/dashboard_preview.png) *(Note: Add your own screenshot here)*
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Dynamic Dashboard**: Real-time stats with animated counters and neon-glow spending trends.
+- **Budget Management**: Premium circular gauges with tracking for over-budget and on-track categories.
+- **Deep Analytics**: Visualization of spending patterns by day, hour, and category.
+- **Comprehensive Reports**: Monthly, Yearly, and All-Time financial breakdowns.
+- **Transaction Tracking**: Powerful filtering, searching, and real-time sum summaries.
+- **Premium UI**: Dark-mode first design featuring glassmorphism, smooth animations, and tailored HSL color palettes.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Framework**: [Next.js 15+](https://nextjs.org/) (App Router)
+- **Database**: [SQLite](https://sqlite.org/) via `better-sqlite3`
+- **Visualization**: [Recharts](https://recharts.org/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Styling**: Tailwind CSS & Vanilla CSS (Glassmorphism system)
+- **Animations**: CSS Keyframes & Framer Motion influences
 
-## Learn More
+## 📋 Getting Started
 
-To learn more about Next.js, take a look at the following resources:
+### Prerequisites
+- Node.js 18+
+- npm / yarn / pnpm
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Installation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Clone the repository**:
+   ```bash
+   git clone <your-repo-url>
+   cd FinTrackDashboard
+   ```
 
-## Deploy on Vercel
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **Initialize the Database**:
+   The app uses a local `db.db` file. Ensure it exists in the root directory.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+
+5. **Open the app**:
+   Navigate to [http://localhost:3000](http://localhost:3000).
+
+## 🛡️ Stability & Accuracy
+- **Local-Time Safe**: All queries are robust against UTC shifts to ensure your data always lands in the correct month.
+- **Optimized Performance**: Isolated React state for high-frequency updates (like counters) and optimized chart rendering.
+
+---
+Built with ❤️ for precision financial tracking.
