@@ -12,6 +12,7 @@ import {
     BarChart3, DollarSign, Zap, AlertTriangle, ChevronRight
 } from "lucide-react";
 import { formatCurrency, formatCompactCurrency } from "@/lib/utils";
+import Link from "next/link";
 
 // Types
 interface DashboardData {
@@ -95,9 +96,9 @@ function StatCard({ label, value, icon: Icon, color, trend, trendValue, sparkDat
     const style = colorStyles[color] || colorStyles.indigo;
 
     return (
-        <div className={`glass-card p-5 group transition-all ${style.glow}`}>
-            <div className="flex items-start justify-between mb-3">
-                <div className={`p-2.5 rounded-xl ${style.bg}`}>
+        <div className={`glass-card p-4 group transition-all ${style.glow}`}>
+            <div className="flex items-start justify-between mb-2">
+                <div className={`p-2 rounded-xl ${style.bg}`}>
                     <Icon className={`w-5 h-5 ${style.text}`} />
                 </div>
                 {trend && (
@@ -107,19 +108,10 @@ function StatCard({ label, value, icon: Icon, color, trend, trendValue, sparkDat
                     </div>
                 )}
             </div>
-            <p className="text-2xl font-bold text-[var(--foreground)] mb-1">
+            <p className="text-2xl font-bold text-[var(--foreground)] mb-0.5">
                 {animateValue && typeof value === 'number' ? <MetricCounter value={value} /> : value}
             </p>
             <p className="text-xs text-[var(--foreground-muted)] uppercase tracking-wider">{label}</p>
-            {sparkData && isMounted && (
-                <div className="mt-3 h-8">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={sparkData.map((v, i) => ({ v }))}>
-                            <Line type="monotone" dataKey="v" stroke={style.text.replace("text-", "#").replace("-400", "")} strokeWidth={2} dot={false} />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            )}
         </div>
     );
 }
@@ -183,20 +175,20 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
             {/* Charts Row 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Trend Chart */}
-                <div className="lg:col-span-2 glass-card p-6">
+                <div className="lg:col-span-2 glass-card p-6 pb-6 flex flex-col">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-lg font-semibold text-[var(--foreground)]">Spending Trend</h3>
                             <p className="text-sm text-[var(--foreground-muted)]">Last 30 days activity</p>
                         </div>
-                        <button className="btn btn-ghost text-xs">
+                        <Link href="/analytics" className="btn btn-ghost text-xs">
                             View Details <ChevronRight className="w-4 h-4" />
-                        </button>
+                        </Link>
                     </div>
-                    <div className="h-[280px]">
+                    <div className="flex-1 min-h-[220px]">
                         {isMounted && (
                             <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={data.spendingTrend}>
+                                <ComposedChart data={data.spendingTrend} margin={{ bottom: 20 }}>
                                     <defs>
                                         <linearGradient id="spendGradient" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="0%" stopColor="#818cf8" stopOpacity={0.3} />
@@ -211,7 +203,17 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                                             </feMerge>
                                         </filter>
                                     </defs>
-                                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#6b6b80', fontSize: 10 }} hide />
+                                    <XAxis
+                                        dataKey="date"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#6b6b80', fontSize: 10 }}
+                                        minTickGap={15}
+                                        tickFormatter={(str) => {
+                                            const d = new Date(str);
+                                            return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                                        }}
+                                    />
                                     <YAxis hide />
                                     <Tooltip
                                         content={<ChartTooltip />}
@@ -223,10 +225,12 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                                         stroke="none"
                                         fill="url(#spendGradient)"
                                         fillOpacity={1}
+                                        tooltipType="none"
                                     />
                                     <Line
                                         type="monotone"
                                         dataKey="amount"
+                                        name="Spent"
                                         stroke="#818cf8"
                                         strokeWidth={3}
                                         dot={false}
@@ -240,13 +244,13 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                 </div>
 
                 {/* Budget Gauge - Premium Redesign */}
-                <div className="glass-card p-6 overflow-hidden relative">
+                <div className="glass-card p-6 pb-6 overflow-hidden relative flex flex-col">
                     <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">Budget Status</h3>
                     <p className="text-xs text-[var(--foreground-muted)] mb-4">Monthly spending vs. budget</p>
 
                     <div className="flex flex-col items-center justify-center">
                         {/* Large Gauge Container */}
-                        <div className="relative w-full aspect-square max-w-[280px] mx-auto">
+                        <div className="relative w-full aspect-square max-w-[240px] mx-auto">
                             {/* SVG for Gradients and Filters */}
                             <svg width="0" height="0" className="absolute">
                                 <defs>
@@ -289,11 +293,11 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
 
                             {/* Center Content */}
                             <div className="absolute inset-0 flex flex-col items-center justify-center pt-2">
-                                <span className="text-6xl font-black tracking-tighter leading-none" style={{ color: budgetColor, textShadow: `0 0 40px ${budgetColor}66` }}>
+                                <span className="text-5xl font-black tracking-tighter leading-none" style={{ color: budgetColor, textShadow: `0 0 40px ${budgetColor}66` }}>
                                     {budgetPct}
-                                    <span className="text-2xl font-bold opacity-70 ml-1">%</span>
+                                    <span className="text-xl font-bold opacity-70 ml-1">%</span>
                                 </span>
-                                <span className="text-xs font-bold text-white/60 uppercase tracking-[0.3em] mt-1 mb-6">
+                                <span className="text-xs font-bold text-white/60 uppercase tracking-[0.3em] mt-1 mb-4">
                                     Used
                                 </span>
 
@@ -312,7 +316,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                         </div>
 
                         {/* Footer Stat */}
-                        <div className="w-full mt-4 pt-4 border-t border-white/5 flex justify-between items-center text-sm">
+                        <div className="w-full mt-2 pt-3 border-t border-white/5 flex justify-between items-center text-sm">
                             <span className="text-[var(--foreground-muted)]">Total Budget</span>
                             <span className="font-bold text-[var(--foreground)]">{formatCurrency(data.monthlyBudget)}</span>
                         </div>
@@ -323,7 +327,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
             {/* Charts Row 2 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Income vs Expenses */}
-                <div className="glass-card p-6">
+                <div className="glass-card p-6 pb-3">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-lg font-semibold text-[var(--foreground)]">Cash Flow</h3>
@@ -334,7 +338,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                             <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-red-500" /> Expenses</span>
                         </div>
                     </div>
-                    <div className="h-[220px]">
+                    <div className="h-[200px]">
                         {isMounted && (
                             <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart data={data.monthlyOverview}>
@@ -351,7 +355,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                 </div>
 
                 {/* Category Distribution */}
-                <div className="glass-card p-6">
+                <div className="glass-card p-6 pb-3">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-lg font-semibold text-[var(--foreground)]">Spending by Category</h3>
