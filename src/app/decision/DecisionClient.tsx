@@ -82,6 +82,11 @@ interface StrategicMetrics {
         archetype: 'Weekend Leak' | 'Impulse Spike' | 'Steady' | 'None';
         highRiskDays: string[];
     };
+    v5: {
+        isHardLocked: boolean;
+        impactNarrative: string;
+        bufferReboundPct: number;
+    };
 }
 
 export default function DecisionClient({ data }: { data: StrategicMetrics }) {
@@ -194,11 +199,20 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                         </div>
 
                         <div className="relative z-10 mt-8 mb-8">
-                            <h3 className={`text-6xl lg:text-7xl font-black tracking-tighter ${adaColor} transition-all duration-300 whitespace-nowrap`}>
-                                {formatCurrency(simulatedDebtPayment !== null ? virtualADA : data.ada)}
-                            </h3>
+                            <div className="flex items-end gap-3">
+                                <h3 className={`text-6xl lg:text-7xl font-black tracking-tighter ${adaColor} transition-all duration-300 whitespace-nowrap`}>
+                                    {data.v5.isHardLocked ? formatCurrency(0) : formatCurrency(simulatedDebtPayment !== null ? virtualADA : data.ada)}
+                                </h3>
+                                {data.v5.isHardLocked && (
+                                    <div className="mb-2 px-2 py-0.5 rounded bg-red-500 text-white text-[10px] font-black uppercase flex items-center gap-1">
+                                        <Lock className="w-3 h-3" /> Locked
+                                    </div>
+                                )}
+                            </div>
                             <p className="text-sm font-medium text-[var(--foreground-muted)] mt-2 flex items-center gap-2">
-                                {data.ada >= 0 ? (
+                                {data.v5.isHardLocked ? (
+                                    <span className="text-red-500 flex items-center gap-1 font-bold animate-pulse"><AlertTriangle className="w-4 h-4" /> SURVIVAL LOCK: Every DH spent today puts your bills at risk.</span>
+                                ) : data.ada >= 0 ? (
                                     <span className="text-emerald-400 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> You're on track.</span>
                                 ) : (
                                     <span className="text-red-400 flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> Stop spending immediately.</span>
@@ -337,12 +351,12 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                             <AlertTriangle className="w-4 h-4" /> Real Impact
                         </h3>
                         <p className="text-sm font-medium text-[var(--foreground)] leading-relaxed mb-4">
-                            You could have paid for <span className="text-red-500 font-bold text-lg">{Math.floor(data.theft.total / 1150)} months</span> of School with this wasted money.
+                            {data.v5.impactNarrative}
                         </p>
                         <div className="w-full bg-[var(--surface)] h-1 rounded-full overflow-hidden">
                             <div className="bg-red-500 h-full w-[24%]" />
                         </div>
-                        <p className="text-[10px] text-right text-red-400 mt-1 font-mono">24% of Budget Lost</p>
+                        <p className="text-[10px] text-right text-red-400 mt-1 font-mono">{((data.theft.total / 10000) * 100).toFixed(0)}% of Budget Lost</p>
                     </div>
 
                     {/* Top Leaks */}
@@ -431,28 +445,53 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                             </div>
                         </div>
                     ) : (
-                        <div className="glass-card p-6 flex flex-col justify-center items-center text-center opacity-70">
-                            <Shield className="w-12 h-12 text-teal-500 mb-4 opacity-50" />
-                            <h3 className="text-sm font-bold text-[var(--foreground)] uppercase">Operational Solvency Focus</h3>
-                            <p className="text-xs text-[var(--foreground-muted)] mt-2 max-w-xs">
-                                You are debt-free. Your focus is now on maintaining the Iron Buffer and optimizing Operational Efficiency.
-                            </p>
-                            <div className="mt-6 w-full bg-[var(--background-secondary)] rounded-lg p-3 border border-[var(--glass-border)]">
-                                <div className="flex justify-between text-xs font-mono mb-1">
-                                    <span>IRON COVERAGE</span>
-                                    <span className={data.liquidity.coverageRatio >= 100 ? "text-emerald-400" : "text-amber-400"}>
-                                        {data.liquidity.coverageRatio.toFixed(0)}%
-                                    </span>
+                        <div className="glass-card p-6 flex flex-col justify-center relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <Shield className="w-24 h-24 text-teal-500" />
+                            </div>
+                            <div className="relative z-10">
+                                <h3 className="text-sm font-bold text-teal-400 uppercase mb-1 flex items-center gap-2">
+                                    <Shield className="w-5 h-5" /> Buffer Restoration
+                                </h3>
+                                <p className="text-[10px] text-[var(--foreground-muted)] uppercase mb-6">REBUILDING IRON RESERVES</p>
+
+                                <div className="space-y-6">
+                                    <div className="flex items-end justify-between">
+                                        <div>
+                                            <p className="text-xs font-bold text-white mb-1">Iron Solvency</p>
+                                            <p className={`text-2xl font-black ${data.liquidity.coverageRatio >= 100 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                                                {data.v5.bufferReboundPct.toFixed(0)}%
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] text-[var(--foreground-muted)] uppercase">Target</p>
+                                            <p className="text-sm font-bold text-[var(--foreground-muted)]">100% Secure</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="relative h-6 w-full bg-[var(--surface)] rounded-full overflow-hidden border border-white/5">
+                                        <div
+                                            className={`absolute left-0 top-0 h-full transition-all duration-1000 ${data.liquidity.coverageRatio >= 100 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                            style={{ width: `${Math.max(0, Math.min(100, data.v5.bufferReboundPct))}%` }}
+                                        />
+                                        {data.v5.bufferReboundPct < 0 && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-red-500/10">
+                                                <span className="text-[10px] font-black text-red-100 uppercase tracking-widest animate-pulse">Deficit State</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4 pt-2">
+                                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                            <p className="text-[8px] text-[var(--foreground-muted)] uppercase mb-1">Cash Gap</p>
+                                            <p className="text-xs font-bold text-white">{formatCurrency(Math.max(0, data.liquidity.ironRemaining - data.liquidity.cashRemaining))}</p>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                            <p className="text-[8px] text-[var(--foreground-muted)] uppercase mb-1">Goal</p>
+                                            <p className="text-xs font-bold text-emerald-400">Restored</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="h-1.5 w-full bg-[var(--surface)] rounded-full overflow-hidden">
-                                    {/* Clamp negative width to 0% */}
-                                    <div className={`h-full ${data.liquidity.coverageRatio >= 100 ? "bg-emerald-500" : "bg-red-500"} transition-all duration-1000`} style={{ width: `${Math.max(0, Math.min(100, data.liquidity.coverageRatio))}%` }} />
-                                </div>
-                                {data.liquidity.coverageRatio < 0 && (
-                                    <p className="text-[10px] text-red-400 mt-2 font-bold uppercase">
-                                        Negative Solvency
-                                    </p>
-                                )}
                             </div>
                         </div>
                     )}

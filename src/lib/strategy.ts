@@ -77,7 +77,12 @@ export interface StrategicMetrics {
     };
     behavior: {
         archetype: 'Weekend Leak' | 'Impulse Spike' | 'Steady' | 'None';
-        highRiskDays: string[]; // e.g., ["Saturday", "Sunday"]
+        highRiskDays: string[];
+    };
+    v5: {
+        isHardLocked: boolean;
+        impactNarrative: string;
+        bufferReboundPct: number;
     };
 }
 
@@ -176,9 +181,16 @@ export function getStrategicMetrics(): StrategicMetrics {
     const liquidityStatus = currentCashRemaining < totalIronRemaining ? 'lockdown' : 'secure';
     const coverageRatio = totalIronRemaining > 0 ? (currentCashRemaining / totalIronRemaining) * 100 : 100;
 
-    // ADA Calculation
+    // ADA Calculation & Survival Ceiling (V5)
     const effectiveDisposable = (monthlyIncome + sideHustleEarned) - totalFixedBudget - totalDebtBudget - ghostBufferAmount - deficitCarryOver;
-    const ada = (effectiveDisposable - totalFlexSpent) / daysRemaining;
+    let ada = (effectiveDisposable - totalFlexSpent) / daysRemaining;
+
+    const isHardLocked = currentCashRemaining < totalIronRemaining;
+    if (isHardLocked && ada > 0) {
+        // Even if the math says we have ADA, if we don't have enough cash for base bills, 
+        // we lock ADA to 0 for decision purposes.
+        ada = 0;
+    }
 
     // Velocity Sync
     const timePct = (dayOfMonth / daysInMonth) * 100;
@@ -187,12 +199,20 @@ export function getStrategicMetrics(): StrategicMetrics {
 
     // 4. Savings Erosion & Recovery
     let theftTotal = 0;
+    const leakDetails: { comment: string, total: number }[] = [];
+
     dna.flexCategoryIds.forEach(id => {
         const s = getCategoryStats(id);
-        if (s.spent > Math.abs(s.budget)) {
-            theftTotal += (s.spent - Math.abs(s.budget));
+        const budget = Math.abs(s.budget);
+        if (s.spent > budget) {
+            const diff = s.spent - budget;
+            theftTotal += diff;
+            leakDetails.push({ comment: s.name, total: diff });
         }
     });
+
+    // Sort leaks by severity
+    leakDetails.sort((a, b) => b.total - a.total);
 
     const totalDeficit = deficitCarryOver + (ada < 0 ? Math.abs(ada * daysRemaining) : 0);
     const monthsToRecover = totalDeficit > 0 && dna.recoveryTargetIncome > 0
@@ -200,6 +220,15 @@ export function getStrategicMetrics(): StrategicMetrics {
         : 0;
 
     const sensitivity = (100 / dna.recoveryTargetIncome) * 30;
+
+    // V5 Dynamic Narrative
+    const narratives = [
+        `You could have paid for ${Math.floor(theftTotal / 1150)} months of School.`,
+        `This waste is equal to ${Math.round(theftTotal / 45)} full days of healthy food.`,
+        `This could have funded ${(theftTotal / 250).toFixed(1)} doctor visits.`,
+        `You are trading your Future Security for temporary dopamine.`
+    ];
+    const impactNarrative = narratives[dayOfMonth % narratives.length];
 
     // V3: Survival Neutral Debt & Sustainability
     const resources = monthlyIncome + sideHustleEarned - ghostBufferAmount - deficitCarryOver;
@@ -284,7 +313,6 @@ export function getStrategicMetrics(): StrategicMetrics {
     const dailyDebtCapacity = totalDebtBudget / 30;
     const impactDays = dailyDebtCapacity > 0 ? Math.round(theftTotal / dailyDebtCapacity) : 0;
 
-    // Unknown Pareto
     const unknownStats = db.prepare(`
         SELECT Comment, COUNT(*) as count, SUM(ABS(Amount)) as total
         FROM Expense 
@@ -293,8 +321,14 @@ export function getStrategicMetrics(): StrategicMetrics {
         AND LENGTH(Comment) > 2
         AND Comment NOT LIKE '...%'
         AND Comment != '.'
-        GROUP BY Comment ORDER BY total DESC LIMIT 3
+        GROUP BY Comment ORDER BY total DESC LIMIT 2
     `).all(dna.unknownCategoryId, currentMonth + '%') as { Comment: string, count: number, total: number }[];
+
+    // Combine Unknowns with overspent Flex categories for a cleaner "Leaks" HUD
+    const combinedLeaks = [
+        ...leakDetails.map(l => ({ comment: l.comment, total: l.total })),
+        ...unknownStats.map(u => ({ comment: u.Comment, total: u.total }))
+    ].sort((a, b) => b.total - a.total).slice(0, 3);
 
     // 5. Strategic Liabilities (Allocation & Grading)
     let essentialSpent = 0;
@@ -336,7 +370,7 @@ export function getStrategicMetrics(): StrategicMetrics {
             total: theftTotal,
             impactDays
         },
-        unknowns: unknownStats.map(u => ({ comment: u.Comment || 'Unlabeled', count: u.count, total: u.total })),
+        unknowns: combinedLeaks.map(u => ({ comment: u.comment || 'Unlabeled', count: 0, total: u.total })),
         debt: debtItems,
         allocation: {
             essential: essentialSpent,
@@ -381,6 +415,11 @@ export function getStrategicMetrics(): StrategicMetrics {
         behavior: {
             archetype,
             highRiskDays
+        },
+        v5: {
+            isHardLocked,
+            impactNarrative,
+            bufferReboundPct: Math.max(-100, Math.min(100, coverageRatio))
         }
     };
 }
