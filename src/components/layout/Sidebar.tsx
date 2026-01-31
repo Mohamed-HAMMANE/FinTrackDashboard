@@ -5,11 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     LayoutDashboard, Receipt, BarChart3, Target, FileText,
-    Wallet
+    Wallet, Shield
 } from "lucide-react";
 
 const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/decision", label: "Command Center", icon: Shield },
     { href: "/transactions", label: "Transactions", icon: Receipt },
     { href: "/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/budgets", label: "Budgets", icon: Target },
