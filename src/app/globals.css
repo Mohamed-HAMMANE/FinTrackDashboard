@@ -1,50 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  /* Premium Dark Palette */
-  --background: #06060a;
-  --background-secondary: #0c0c12;
-  --background-tertiary: #14141f;
-  --surface: #1a1a28;
-  --surface-hover: #22223a;
+  /* Premium Dark Palette - Deep Space Theme */
+  --background: #030305;
+  --background-secondary: #0a0a0f;
+  --background-tertiary: #11111a;
+  --surface: #161622;
+  --surface-hover: #1e1e2e;
 
-  --foreground: #f4f4f8;
-  --foreground-secondary: #b8b8c8;
-  --foreground-muted: #6b6b80;
+  --foreground: #ffffff;
+  --foreground-secondary: #a0a0b0;
+  --foreground-muted: #5e5e70;
 
-  /* Accent Palette */
-  --accent-primary: #6366f1;
-  --accent-primary-light: #818cf8;
-  --accent-primary-dark: #4f46e5;
-  --accent-primary-glow: rgba(99, 102, 241, 0.35);
+  /* Glassmorphism V2 - Clearer, Premium */
+  --glass-bg: rgba(20, 20, 30, 0.4);
+  --glass-bg-hover: rgba(30, 30, 45, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.15);
+  --glass-shine: rgba(255, 255, 255, 0.03);
 
-  --accent-success: #10b981;
-  --accent-success-light: #34d399;
-  --accent-success-glow: rgba(16, 185, 129, 0.3);
-
-  --accent-warning: #f59e0b;
-  --accent-warning-light: #fbbf24;
-  --accent-warning-glow: rgba(245, 158, 11, 0.3);
-
-  --accent-danger: #ef4444;
-  --accent-danger-light: #f87171;
-  --accent-danger-glow: rgba(239, 68, 68, 0.3);
-
-  --accent-info: #06b6d4;
-  --accent-purple: #8b5cf6;
-  --accent-pink: #ec4899;
-
-  /* Glassmorphism */
-  --glass-bg: rgba(255, 255, 255, 0.02);
-  --glass-bg-hover: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-border-hover: rgba(255, 255, 255, 0.1);
-
-  /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 40px var(--accent-primary-glow);
+  /* Shadows - Deeper depth */
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 50px var(--accent-primary-glow);
 
   /* Sidebar */
   --sidebar-width: 260px;
@@ -109,10 +88,25 @@ body {
 .glass-card {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 20px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, var(--glass-shine) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .glass-card:hover {

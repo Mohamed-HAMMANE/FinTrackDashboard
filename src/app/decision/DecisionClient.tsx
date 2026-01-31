@@ -5,7 +5,7 @@ import {
     Shield, ShieldAlert, Target, TrendingUp, TrendingDown,
     AlertTriangle, Brain, Lock, Zap, Clock, DollarSign,
     CheckCircle, XCircle, ArrowRight, Ghost, RefreshCw,
-    Scale, AlertOctagon, Activity, Calendar
+    Scale, AlertOctagon, Activity, Calendar, Trash2
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis } from "recharts";
@@ -57,6 +57,7 @@ interface StrategicMetrics {
         status: 'neutral' | 'recovering';
         monthsToRecover: number;
         sensitivity: number;
+        recoveryTarget: number;
     };
     revenue: {
         sideHustleEarned: number;
@@ -168,90 +169,99 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* ADA HUD */}
-                    <div className={`glass-card p-8 flex flex-col items-center justify-center relative overflow-hidden group ${data.adaStatus === 'crisis' ? 'border-red-500' : ''}`}>
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-current to-transparent opacity-50" />
+                    {/* Main ADA (Safe to Spend) HUD */}
+                    <div className="lg:col-span-2 glass-card p-8 flex flex-col justify-between relative group overflow-hidden min-h-[300px]">
+                        {/* Background Glow */}
+                        <div className={`absolute -right-20 -top-20 w-80 h-80 rounded-full blur-[100px] opacity-20 transition-colors duration-500
+                                ${data.adaStatus === 'crisis' ? 'bg-red-500' : 'bg-emerald-500'}`} />
 
-                        {/* Simulation Indicator */}
-                        {simulatedDebtPayment !== null && (
-                            <div className="absolute top-4 left-4 bg-teal-500/20 text-teal-400 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse border border-teal-500/50">
-                                Simulation Active
+                        <div className="relative z-10 flex justify-between items-start">
+                            <div>
+                                <h2 className="text-sm font-bold text-[var(--foreground-muted)] uppercase tracking-widest mb-1 flex items-center gap-2">
+                                    <Shield className="w-4 h-4" /> Safe to Spend Daily
+                                </h2>
+                                <p className="text-xs text-[var(--foreground-muted)] opacity-60">Money you can spend today without worry.</p>
                             </div>
-                        )}
 
-                        <span className="text-xs font-mono text-[var(--foreground-muted)] uppercase mb-6">Adjusted Daily Allowance</span>
-                        <div className="relative">
-                            <h3 className={`text-4xl lg:text-5xl font-black tracking-tighter ${adaColor} transition-all duration-300 whitespace-nowrap`}>
+                            {/* Visual Status Badge */}
+                            <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border flex items-center gap-2
+                                ${data.adaStatus === 'optimal' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                                    data.adaStatus === 'warning' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
+                                        'bg-red-500/10 border-red-500/20 text-red-500'}`}>
+                                <div className={`w-2 h-2 rounded-full ${data.adaStatus === 'optimal' ? 'bg-emerald-500' : data.adaStatus === 'warning' ? 'bg-amber-500' : 'bg-red-500'}`} />
+                                {data.adaStatus === 'optimal' ? 'Healthy' : data.adaStatus === 'warning' ? 'Caution' : 'Critical'}
+                            </div>
+                        </div>
+
+                        <div className="relative z-10 mt-8 mb-8">
+                            <h3 className={`text-6xl lg:text-7xl font-black tracking-tighter ${adaColor} transition-all duration-300 whitespace-nowrap`}>
                                 {formatCurrency(simulatedDebtPayment !== null ? virtualADA : data.ada)}
                             </h3>
-                        </div>
-                        <p className={`mt-4 text-sm font-bold uppercase tracking-widest ${adaColor} text-center`}>
-                            {(simulatedDebtPayment !== null ? virtualADA : data.ada) >= 0 ? 'Safe to Spend' : 'Restricted Mode'}
-                        </p>
-
-                        <div className="mt-6 pt-4 border-t border-white/5 w-full text-center">
-                            <p className="text-[10px] text-[var(--foreground-muted)] uppercase tracking-wider flex items-center justify-center gap-1">
-                                <Zap className="w-3 h-3 text-yellow-400" />
-                                Side Hustle Boost: <span className="text-[var(--foreground)] font-bold">+{data.revenue.nextBoostValue} DH / 100 earned</span>
+                            <p className="text-sm font-medium text-[var(--foreground-muted)] mt-2 flex items-center gap-2">
+                                {data.ada >= 0 ? (
+                                    <span className="text-emerald-400 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> You're on track.</span>
+                                ) : (
+                                    <span className="text-red-400 flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> Stop spending immediately.</span>
+                                )}
                             </p>
                         </div>
+
+                        <div className="relative z-10 grid grid-cols-2 gap-4 border-t border-white/5 pt-6">
+                            <div>
+                                <p className="text-[10px] uppercase text-[var(--foreground-muted)] font-bold mb-1">Spending Speed</p>
+                                <div className="flex items-center gap-2">
+                                    <div className={`h-2 flex-1 rounded-full bg-[var(--surface)] overflow-hidden`}>
+                                        <div className={`h-full rounded-full ${data.velocity.status === 'ahead' ? 'bg-emerald-500' : 'bg-red-500'}`}
+                                            style={{ width: `${Math.min(100, (data.velocity.moneyPct / data.velocity.timePct) * 100)}%` }} />
+                                    </div>
+                                    <span className={`text-xs font-bold ${data.velocity.status === 'ahead' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                        {data.velocity.status === 'ahead' ? 'Good' : 'Too Fast'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase text-[var(--foreground-muted)] font-bold mb-1">Side Hustle Reward</p>
+                                <p className="text-xs font-bold text-[var(--foreground)]">+{data.revenue.nextBoostValue} DH <span className="text-[var(--foreground-muted)] font-normal">/ 100 earned</span></p>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Behavioral Insight (Replaces Velocity Sync in V4 emphasis?) No, add below or replace. Let's keep Velocity but add Behavior card. */}
-                    <div className="glass-card p-6 flex flex-col justify-between">
+                    {/* Next Month Forecast (Simplified) */}
+                    <div className="glass-card p-6 flex flex-col justify-between relative group">
+                        <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
                         <div>
-                            <div className="flex items-center gap-2 mb-4">
-                                <Activity className="w-4 h-4 text-purple-400" />
-                                <span className="text-sm font-bold text-[var(--foreground)] uppercase">Behavioral Risk</span>
-                            </div>
-
-                            {data.behavior.archetype !== 'None' ? (
-                                <div className="bg-purple-500/10 border border-purple-500/30 p-4 rounded-xl">
-                                    <h4 className="text-purple-300 font-bold uppercase text-xs mb-1">Pattern Detected</h4>
-                                    <p className="text-lg font-bold text-white mb-2">{data.behavior.archetype}</p>
-                                    <p className="text-xs text-[var(--foreground-muted)]">
-                                        High spending detected on <span className="text-purple-300 font-bold">{data.behavior.highRiskDays.join(' & ')}</span>.
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="text-center py-8 opacity-50">
-                                    <CheckCircle className="w-8 h-8 mx-auto mb-2" />
-                                    <p className="text-xs uppercase font-bold">No Risk Patterns</p>
-                                </div>
-                            )}
+                            <h2 className="text-sm font-bold text-[var(--foreground-muted)] uppercase tracking-widest mb-1 flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-blue-400" /> Next Month
+                            </h2>
+                            <p className="text-xs text-[var(--foreground-muted)] opacity-60">Projected Day 1 Balance</p>
                         </div>
 
-                        <div className="mt-4 pt-4 border-t border-white/5">
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-[var(--foreground-muted)] uppercase">Velocity Sync</span>
-                                <span className={data.velocity.status === 'ahead' ? 'text-emerald-400' : 'text-red-400'}>
-                                    {data.velocity.status.toUpperCase()}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Iron Forecast (Replaces Iron Buffer in prime spot?) */}
-                    <div className="glass-card p-6 flex flex-col">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Calendar className="w-4 h-4 text-blue-400" />
-                            <span className="text-sm font-bold text-[var(--foreground)] uppercase">Next Month Forecast</span>
-                        </div>
-
-                        <div className="flex-1 flex flex-col justify-center text-center">
-                            <p className="text-xs text-[var(--foreground-muted)] uppercase mb-3">Projected Starting Balance</p>
+                        <div className="py-6">
                             <h3 className={`text-3xl font-black ${data.forecast.nextMonthReadiness < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                                 {formatCurrency(data.forecast.nextMonthReadiness)}
                             </h3>
-                            {data.forecast.nextMonthReadiness < 0 && (
-                                <div className="mt-4 bg-red-900/20 border border-red-500/30 p-3 rounded">
-                                    <p className="text-[10px] text-red-300 uppercase font-bold mb-1">Action Required</p>
-                                    <p className="text-xs text-red-200">
-                                        Defer <span className="font-bold text-white">{data.forecast.deferredBillsSuggestion[0]}</span> bill to avoid Day 1 failure.
-                                    </p>
-                                </div>
-                            )}
                         </div>
+
+                        {data.forecast.nextMonthReadiness < 0 ? (
+                            <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl">
+                                <p className="text-xs text-red-300 font-bold flex items-center gap-2 mb-1">
+                                    <AlertTriangle className="w-3 h-3" /> Danger
+                                </p>
+                                <p className="text-[10px] text-red-200/80">
+                                    You will start next month in debt. Defer <span className="text-white font-bold underline">{data.forecast.deferredBillsSuggestion[0]}</span> bill.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl">
+                                <p className="text-xs text-emerald-300 font-bold flex items-center gap-2 mb-1">
+                                    <CheckCircle className="w-3 h-3" /> Secure
+                                </p>
+                                <p className="text-[10px] text-emerald-200/80">
+                                    You're set for a positive start next month. Keep it up!
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>
@@ -264,15 +274,17 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Theft Gauge */}
-                    <div className="glass-card p-6 flex flex-col relative">
-                        <h3 className="text-xs font-mono text-[var(--foreground-muted)] uppercase mb-4 text-center">Capital Stolen</h3>
-                        <div className="flex-1 flex items-center justify-center">
-                            <div className="relative w-40 h-40">
+                    {/* Money Wasted (Theft) */}
+                    <div className="glass-card p-6 flex flex-col relative group">
+                        <h3 className="text-xs font-bold text-[var(--foreground-muted)] uppercase mb-4 flex items-center gap-2">
+                            <Trash2 className="w-4 h-4 text-red-500" /> Money Wasted
+                        </h3>
+                        <div className="flex-1 flex flex-col items-center justify-center">
+                            <div className="relative w-32 h-32 mb-4">
                                 {isMounted && (
                                     <ResponsiveContainer width="100%" height="100%">
                                         <RadialBarChart
-                                            cx="50%" cy="50%" innerRadius="70%" outerRadius="90%" barSize={10}
+                                            cx="50%" cy="50%" innerRadius="80%" outerRadius="100%" barSize={8}
                                             data={[{ value: 100, fill: '#333' }]}
                                             startAngle={90} endAngle={-270}
                                         >
@@ -280,70 +292,78 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                                         </RadialBarChart>
                                     </ResponsiveContainer>
                                 )}
-                                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span className="text-md font-black text-red-500">{formatCurrency(data.theft.total)}</span>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-lg font-black text-red-500">{formatCurrency(data.theft.total)}</span>
                                 </div>
+                            </div>
+                            <p className="text-[10px] text-center text-[var(--foreground-muted)]">
+                                Money spent on things you didn't plan for.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Time to Freedom (Recovery) */}
+                    <div className="glass-card p-6 bg-indigo-500/5 flex flex-col justify-center relative overflow-hidden">
+                        <div className="relative z-10">
+                            <h3 className="text-xs font-bold text-indigo-400 uppercase mb-4 flex items-center gap-2">
+                                <Clock className="w-4 h-4" /> Time to Freedom
+                            </h3>
+                            <div className="space-y-1">
+                                <p className="text-3xl font-black text-indigo-400">
+                                    {data.recovery.monthsToRecover} <span className="text-lg text-[var(--foreground)]">Months</span>
+                                </p>
+                                <p className="text-xs text-[var(--foreground-muted)] opacity-80">
+                                    Recovery Target: <span className="text-white font-bold">{formatCurrency(data.recovery.recoveryTarget)}/mo</span>
+                                </p>
+                            </div>
+
+                            <div className="mt-4 pt-4 border-t border-indigo-500/20 space-y-3">
+                                <div className="p-2 rounded bg-indigo-500/10 border border-indigo-500/20">
+                                    <p className="text-[10px] text-indigo-300 font-bold uppercase mb-1">Command:</p>
+                                    <p className="text-xs text-indigo-100">
+                                        Reduce lifestyle spending or earn extra to hit the <span className="font-bold underline">{formatCurrency(data.recovery.recoveryTarget)}</span> monthly target.
+                                    </p>
+                                </div>
+                                <p className="text-[10px] text-indigo-300">
+                                    <span className="font-bold">Fact:</span> Spending 100 DH adds <span className="font-bold underline">{data.recovery.sensitivity} days</span> to this time.
+                                </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Dynamic Squeeze Factor */}
-                    <div className="glass-card p-6 bg-indigo-500/5 border-indigo-500/20 flex flex-col justify-center">
-                        <h3 className="text-sm font-bold text-indigo-400 uppercase mb-4 flex items-center gap-2">
-                            <Clock className="w-4 h-4" /> Recovery Horizon
+                    {/* Impact (Consequence) */}
+                    <div className="glass-card p-6 bg-red-500/5 flex flex-col justify-center">
+                        <h3 className="text-xs font-bold text-red-400 uppercase mb-4 flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4" /> Real Impact
                         </h3>
-                        <div className="space-y-2">
-                            <p className="text-3xl font-black text-indigo-400">
-                                {data.recovery.monthsToRecover} <span className="text-lg text-[var(--foreground)]">Months</span>
-                            </p>
-                            <p className="text-xs text-[var(--foreground-muted)] uppercase tracking-wide">
-                                of aggressive squeeze
-                            </p>
+                        <p className="text-sm font-medium text-[var(--foreground)] leading-relaxed mb-4">
+                            You could have paid for <span className="text-red-500 font-bold text-lg">{Math.floor(data.theft.total / 1150)} months</span> of School with this wasted money.
+                        </p>
+                        <div className="w-full bg-[var(--surface)] h-1 rounded-full overflow-hidden">
+                            <div className="bg-red-500 h-full w-[24%]" />
                         </div>
-                        {/* Sensitivity Badge */}
-                        <div className="mt-6 flex items-center gap-2 bg-indigo-500/20 px-3 py-2 rounded-lg">
-                            <AlertTriangle className="w-3 h-3 text-indigo-300" />
-                            <p className="text-[10px] text-indigo-200 leading-tight">
-                                <span className="font-bold text-indigo-100">Warning:</span> Spending 100 DH adds <span className="font-bold underline">{data.recovery.sensitivity} days</span> to this countdown.
-                            </p>
-                        </div>
+                        <p className="text-[10px] text-right text-red-400 mt-1 font-mono">24% of Budget Lost</p>
                     </div>
 
-                    {/* Consequence */}
-                    <div className="glass-card p-6 bg-red-500/5 border-red-500/20 flex flex-col justify-center">
-                        <h3 className="text-sm font-bold text-red-400 uppercase mb-4 flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4" /> Consequence
-                        </h3>
-                        {data.debt.length > 0 ? (
-                            <p className="text-xl font-medium text-[var(--foreground)] leading-relaxed">
-                                Your overspending has delayed your debt freedom by <span className="text-red-500 font-bold text-3xl mx-1">{data.theft.impactDays}</span> days.
-                            </p>
-                        ) : (
-                            <p className="text-xl font-medium text-[var(--foreground)] leading-relaxed">
-                                Your flex spending consumed <span className="text-red-500 font-bold text-3xl mx-1">
-                                    {((data.theft.total / data.ironBuffer.reduce((acc: number, item: any) => acc + item.budget, 0)) * 100).toFixed(0)}%
-                                </span> of your Iron Budget.
-                            </p>
-                        )}
-                        {data.debt.length === 0 && (
-                            <p className="text-xs text-[var(--foreground-muted)] mt-2">
-                                That's enough to pay for <strong>{Math.floor(data.theft.total / 1150)} months</strong> of School.
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Unknown Pareto */}
+                    {/* Top Leaks */}
                     <div className="glass-card p-6">
-                        <h3 className="text-sm font-bold text-[var(--foreground)] uppercase mb-4">Top "Unknown" Leaks</h3>
+                        <h3 className="text-xs font-bold text-[var(--foreground-muted)] uppercase mb-4">Top Leaks</h3>
                         <div className="space-y-3">
-                            {data.unknowns.map((u, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 rounded bg-[var(--background-secondary)] hover:bg-[var(--glass-bg-hover)] transition-colors cursor-pointer group">
-                                    <span className="text-sm font-mono text-[var(--foreground)] group-hover:text-red-400 transition-colors">
-                                        {u.comment}
-                                    </span>
-                                    <span className="text-sm font-bold text-[var(--foreground)]">{formatCurrency(u.total)}</span>
+                            {data.unknowns.length > 0 ? (
+                                data.unknowns.slice(0, 3).map((u, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-[var(--surface)] border border-[var(--glass-border)]">
+                                        <span className="text-xs font-medium text-[var(--foreground)] truncate max-w-[100px]">
+                                            {u.comment}
+                                        </span>
+                                        <span className="text-xs font-bold text-red-400">{formatCurrency(u.total)}</span>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-6 opacity-40">
+                                    <CheckCircle className="w-8 h-8 text-emerald-500 mb-2" />
+                                    <p className="text-[10px] text-[var(--foreground-muted)] uppercase font-bold">No leaks detected</p>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
                 </div>

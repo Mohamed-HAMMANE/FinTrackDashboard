@@ -49,5 +49,5 @@
     "adaThreshold": 50,
     "targetSavingsRate": 20,
     "volatilityReserveRate": 0.10,
-    "recoveryTargetIncome": 2000
+    "recoveryTargetIncome": 1000
 }

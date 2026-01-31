@@ -51,7 +51,8 @@ export interface StrategicMetrics {
         deficitCarryOver: number;
         status: 'neutral' | 'recovering';
         monthsToRecover: number;
-        sensitivity: number; // Days added to horizon per 100 DH spend
+        sensitivity: number;
+        recoveryTarget: number; // Added for UI transparency
     };
     revenue: {
         sideHustleEarned: number;
@@ -355,7 +356,8 @@ export function getStrategicMetrics(): StrategicMetrics {
             deficitCarryOver,
             status: deficitCarryOver > 0 ? 'recovering' : 'neutral',
             monthsToRecover: Number(monthsToRecover.toFixed(1)),
-            sensitivity: Number(sensitivity.toFixed(1))
+            sensitivity: Number(sensitivity.toFixed(1)),
+            recoveryTarget: dna.recoveryTargetIncome
         },
         revenue: {
             sideHustleEarned,
