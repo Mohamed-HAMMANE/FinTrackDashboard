@@ -179,9 +179,9 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                             </div>
                         )}
 
-                        <span className="text-xs font-mono text-[var(--foreground-muted)] uppercase mb-4">Adjusted Daily Allowance</span>
+                        <span className="text-xs font-mono text-[var(--foreground-muted)] uppercase mb-6">Adjusted Daily Allowance</span>
                         <div className="relative">
-                            <h3 className={`text-6xl lg:text-7xl font-black tracking-tighter ${adaColor} drop-shadow-2xl transition-all duration-300`}>
+                            <h3 className={`text-4xl lg:text-5xl font-black tracking-tighter ${adaColor} transition-all duration-300 whitespace-nowrap`}>
                                 {formatCurrency(simulatedDebtPayment !== null ? virtualADA : data.ada)}
                             </h3>
                         </div>
@@ -190,9 +190,9 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                         </p>
 
                         <div className="mt-6 pt-4 border-t border-white/5 w-full text-center">
-                            <p className="text-[10px] text-[var(--foreground-muted)] uppercase tracking-wider">
-                                <Zap className="w-3 h-3 inline-block mr-1 text-yellow-400" />
-                                Side Hustle Boost: <span className="text-[var(--foreground)] font-bold">+ {data.revenue.nextBoostValue} DH / 100 earned</span>
+                            <p className="text-[10px] text-[var(--foreground-muted)] uppercase tracking-wider flex items-center justify-center gap-1">
+                                <Zap className="w-3 h-3 text-yellow-400" />
+                                Side Hustle Boost: <span className="text-[var(--foreground)] font-bold">+{data.revenue.nextBoostValue} DH / 100 earned</span>
                             </p>
                         </div>
                     </div>
@@ -239,7 +239,7 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                         </div>
 
                         <div className="flex-1 flex flex-col justify-center text-center">
-                            <p className="text-xs text-[var(--foreground-muted)] uppercase mb-2">Projected Starting Balance</p>
+                            <p className="text-xs text-[var(--foreground-muted)] uppercase mb-3">Projected Starting Balance</p>
                             <h3 className={`text-3xl font-black ${data.forecast.nextMonthReadiness < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                                 {formatCurrency(data.forecast.nextMonthReadiness)}
                             </h3>
@@ -265,22 +265,24 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Theft Gauge */}
-                    <div className="glass-card p-6 flex flex-col items-center justify-center relative">
-                        <h3 className="text-xs font-mono text-[var(--foreground-muted)] uppercase mb-2">Capital Stolen</h3>
-                        <div className="relative w-40 h-40">
-                            {isMounted && (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <RadialBarChart
-                                        cx="50%" cy="50%" innerRadius="70%" outerRadius="90%" barSize={10}
-                                        data={[{ value: 100, fill: '#333' }]}
-                                        startAngle={90} endAngle={-270}
-                                    >
-                                        <RadialBar dataKey="value" cornerRadius={10} />
-                                    </RadialBarChart>
-                                </ResponsiveContainer>
-                            )}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-2xl font-bold text-red-500">{formatCurrency(data.theft.total)}</span>
+                    <div className="glass-card p-6 flex flex-col relative">
+                        <h3 className="text-xs font-mono text-[var(--foreground-muted)] uppercase mb-4 text-center">Capital Stolen</h3>
+                        <div className="flex-1 flex items-center justify-center">
+                            <div className="relative w-40 h-40">
+                                {isMounted && (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <RadialBarChart
+                                            cx="50%" cy="50%" innerRadius="70%" outerRadius="90%" barSize={10}
+                                            data={[{ value: 100, fill: '#333' }]}
+                                            startAngle={90} endAngle={-270}
+                                        >
+                                            <RadialBar dataKey="value" cornerRadius={10} />
+                                        </RadialBarChart>
+                                    </ResponsiveContainer>
+                                )}
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-md font-black text-red-500">{formatCurrency(data.theft.total)}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
