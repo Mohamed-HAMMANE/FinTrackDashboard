@@ -7,9 +7,9 @@ import {
     ComposedChart, Line, LineChart
 } from "recharts";
 import {
-    TrendingDown, TrendingUp, Wallet, ArrowUpRight, ArrowDownRight,
-    Clock, PiggyBank, Calendar, Activity, CreditCard, Target,
-    BarChart3, DollarSign, Zap, AlertTriangle, ChevronRight
+    CreditCard, ArrowUpRight, ArrowDownRight, Activity,
+    PiggyBank, Calendar, TrendingUp, DollarSign, Zap,
+    AlertTriangle, ChevronRight, RefreshCw, Smartphone
 } from "lucide-react";
 import { formatCurrency, formatCompactCurrency } from "@/lib/utils";
 import Link from "next/link";
@@ -46,6 +46,7 @@ interface DashboardData {
     categoryCount: number;
     firstTransactionDate: string;
     daysSinceFirstTransaction: number;
+    lastUpdated: string;
 }
 
 const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"];
@@ -145,20 +146,28 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
     return (
         <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-2xl lg:text-3xl font-bold text-[var(--foreground)]">{greeting} 👋</h1>
-                    <p className="text-[var(--foreground-muted)] mt-1">Here's your financial overview for {now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+                    <h1 className="text-4xl font-black tracking-tight text-[var(--foreground)] mb-1">
+                        Command <span className="text-indigo-400">Center</span>
+                    </h1>
+                    <div className="flex items-center gap-3">
+                        <p className="text-[var(--foreground-muted)] font-medium">Global Perspective</p>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Live</span>
+                        </div>
+                        {data.lastUpdated && isMounted && (
+                            <div className="flex items-center gap-1.5 text-[var(--foreground-muted)]">
+                                <Smartphone className="w-3.5 h-3.5" />
+                                <span className="text-xs">Last Sync: {new Date(data.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="badge badge-success">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse" />
-                        Live Status
-                    </div>
-                    <div className="badge badge-primary">
-                        <Calendar className="w-3 h-3 mr-1.5" />
-                        {data.daysSinceFirstTransaction} days tracked
-                    </div>
+                <div className="badge badge-primary">
+                    <Calendar className="w-3 h-3 mr-1.5" />
+                    {data.daysSinceFirstTransaction} days tracked
                 </div>
             </div>
 

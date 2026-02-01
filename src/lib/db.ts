@@ -1,13 +1,23 @@
 import 'server-only';
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 
 const dbPath = path.resolve(process.cwd(), 'db.db');
 
-export const db = new Database(dbPath, {
-    readonly: true,
+export let db = new Database(dbPath, {
     fileMustExist: true
 });
+
+export function closeDatabase() {
+    db.close();
+}
+
+export function openDatabase() {
+    db = new Database(dbPath, {
+        fileMustExist: true
+    });
+}
 
 // Types
 export interface Expense {
@@ -100,6 +110,7 @@ export interface DashboardStats {
     categoryCount: number;
     firstTransactionDate: string;
     daysSinceFirstTransaction: number;
+    lastUpdated: string;
 }
 
 export function getDashboardData(): DashboardStats {
@@ -283,6 +294,10 @@ export function getDashboardData(): DashboardStats {
     const projectedMonthlySpend = dayOfMonth > 0 ? Math.round((monthlySpending / dayOfMonth) * daysInMonth) : 0;
     const remainingBudget = monthlyBudget - monthlySpending;
 
+    // Last Updated from file system
+    const dbStats = fs.statSync(dbPath);
+    const lastUpdated = dbStats.mtime.toISOString();
+
     return {
         totalBalance, monthlySpending, monthlyIncome, monthlyBudget,
         lastMonthSpending, spendingChange, dailyAverage, savingsRate,
@@ -292,6 +307,6 @@ export function getDashboardData(): DashboardStats {
         totalIncome, totalExpenses,
         recentExpenses, topExpenses, spendingByCategory, categoryBudgets: categoryBudgetsWithPercentage,
         spendingTrend, monthlyOverview, weekdayPattern, categoryTrends, runningBalance, hourlyPattern,
-        transactionCount, categoryCount, firstTransactionDate, daysSinceFirstTransaction
+        transactionCount, categoryCount, firstTransactionDate, daysSinceFirstTransaction, lastUpdated
     };
 }
