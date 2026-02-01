@@ -38,6 +38,27 @@
   --chart-6: #ec4899;
   --chart-7: #06b6d4;
   --chart-8: #84cc16;
+
+  /* Accents */
+  --accent-primary: #6366f1;
+  --accent-primary-light: #818cf8;
+  --accent-primary-dark: #4f46e5;
+  --accent-primary-glow: rgba(99, 102, 241, 0.4);
+
+  --accent-success: #10b981;
+  --accent-success-light: #34d399;
+  --accent-success-glow: rgba(16, 185, 129, 0.4);
+
+  --accent-warning: #f59e0b;
+  --accent-warning-light: #fbbf24;
+  --accent-warning-glow: rgba(245, 158, 11, 0.4);
+
+  --accent-danger: #ef4444;
+  --accent-danger-light: #f87171;
+  --accent-danger-glow: rgba(239, 68, 68, 0.4);
+
+  --accent-info: #06b6d4;
+  --accent-info-light: #22d3ee;
 }
 
 @theme inline {

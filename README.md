@@ -1,60 +1,65 @@
-# 💎 FinTrack Dashboard
+# 💎 FinTrack Dashboard: Tactical Command Center
 
-A premium, glassmorphic personal finance tracker built with **Next.js**, **SQLite**, and **Recharts**. Track your spending, manage budgets, and visualize your financial health with a state-of-the-art interface.
+A premium, glassmorphic financial strategist and analytics dashboard built with **Next.js 16**, **SQLite**, and **Tailwind CSS 4**. This isn't just a tracker—it's an autonomous strategist designed to enforce financial discipline through survival metrics and gamification.
 
-![Dashboard Preview](public/dashboard_preview.png) *(Note: Add your own screenshot here)*
+## 🚀 Key Features
 
-## 🚀 Features
+### 1. Tactical Command Center (Strategist)
+- **ADA (Adjusted Daily Allowance)**: The heart of the strategist. Calculates exactly how much you can spend *today* based on income, fixed bills, debt, and survival reserves.
+- **Liquidity Lockdown**: Automatic "Red Alert" system that triggers if current cash drops below upcoming "Iron Bills" (mandatory obligations).
+- **Insolvency Exit (V6)**: Gamified recovery tracking with 500 DH milestones and "Dopamine Swap" suggestions to replace expensive habits with free activities.
+- **Capital Theft Tracking**: Visualizes how much "Flex" overspending has been "stolen" from your future freedom.
 
-- **Dynamic Dashboard**: Real-time stats with animated counters and neon-glow spending trends.
-- **Budget Management**: Premium circular gauges with tracking for over-budget and on-track categories.
-- **Deep Analytics**: Visualization of spending patterns by day, hour, and category.
-- **Comprehensive Reports**: Monthly, Yearly, and All-Time financial breakdowns.
-- **Transaction Tracking**: Powerful filtering, searching, and real-time sum summaries.
-- **Premium UI**: Dark-mode first design featuring glassmorphism, smooth animations, and tailored HSL color palettes.
+### 2. Local Android Sync API
+- **Direct App Link**: Built-in ingestion layer for the companion Android app.
+- **Push Synchronization**: Sync your mobile database over your local network using the secure `/api/sync` endpoint.
+- **Status HUD**: Real-time "Last Sync" indicator and live data pulse on the main dashboard.
+
+### 3. Analytics & Visualization
+- **Spending Trend**: High-density timeline of the last 30 days with automated date formatting and clean tooltips.
+- **Budget Status Gauge**: Premium radial progress charts for monthly spending vs. category limits.
+- **Cash Flow Overview**: 6-month historical comparison of Income, Expenses, and Net Profit.
 
 ## 🛠️ Tech Stack
 
-- **Framework**: [Next.js 15+](https://nextjs.org/) (App Router)
-- **Database**: [SQLite](https://sqlite.org/) via `better-sqlite3`
-- **Visualization**: [Recharts](https://recharts.org/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Styling**: Tailwind CSS & Vanilla CSS (Glassmorphism system)
-- **Animations**: CSS Keyframes & Framer Motion influences
+- **Framework**: Next.js 16 (App Router)
+- **Database**: SQLite via `better-sqlite3` (Read-Write support enabled)
+- **Styling**: Tailwind CSS v4 + Premium Glassmorphism V2
+- **Icons**: Lucide React
+- **Standardization**: Unified StrategicMetrics API (Production Ready)
 
 ## 📋 Getting Started
 
-### Prerequisites
-- Node.js 18+
-- npm / yarn / pnpm
-
 ### Installation
 
-1. **Clone the repository**:
-   ```bash
-   git clone <your-repo-url>
-   cd FinTrackDashboard
-   ```
-
-2. **Install dependencies**:
+1. **Clone & Install**:
    ```bash
    npm install
    ```
 
-3. **Initialize the Database**:
-   The app uses a local `db.db` file. Ensure it exists in the root directory.
-
-4. **Run the development server**:
-   ```bash
-   npm run dev
+2. **Sync Key Setup**:
+   Create a `.env.local` file and add a secret key for your phone to sync:
+   ```env
+   SYNC_API_KEY=your_secret_key_here
    ```
 
-5. **Open the app**:
-   Navigate to [http://localhost:3000](http://localhost:3000).
+### Hosting (Production Mode)
 
-## 🛡️ Stability & Accuracy
-- **Local-Time Safe**: All queries are robust against UTC shifts to ensure your data always lands in the correct month.
-- **Optimized Performance**: Isolated React state for high-frequency updates (like counters) and optimized chart rendering.
+For the best performance and background hosting on your laptop:
+
+```bash
+# Build the optimized application
+npm run build
+
+# Start the high-performance server
+npm run start
+```
+
+### 📱 Android Sync Setup
+Point your Android app's sync feature to:
+- **URL**: `http://YOUR_LOCAL_IP:3000/api/sync`
+- **Method**: `POST`
+- **Header**: `x-api-key: your_secret_key_here`
 
 ---
-Built with ❤️ for precision financial tracking.
+Built with ❤️ for precision financial survival and freedom.
