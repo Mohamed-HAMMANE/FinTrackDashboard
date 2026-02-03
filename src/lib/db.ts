@@ -68,6 +68,12 @@ export interface RunningBalance {
     balance: number;
 }
 
+export interface BudgetBurnRate {
+    day: number;
+    timeProgress: number;
+    budgetProgress: number;
+}
+
 export interface DashboardStats {
     // Core Stats
     totalBalance: number;
@@ -104,6 +110,7 @@ export interface DashboardStats {
     categoryTrends: CategoryTrend[];
     runningBalance: RunningBalance[];
     hourlyPattern: HourlyPattern[];
+    budgetBurnRate: BudgetBurnRate[];
 
     // Metadata
     transactionCount: number;
@@ -294,6 +301,36 @@ export function getDashboardData(): DashboardStats {
     const projectedMonthlySpend = dayOfMonth > 0 ? Math.round((monthlySpending / dayOfMonth) * daysInMonth) : 0;
     const remainingBudget = monthlyBudget - monthlySpending;
 
+    // Budget Burn Rate (cumulative spending by day this month)
+    const budgetBurnRate: BudgetBurnRate[] = [];
+    const dailySpendingRaw = db.prepare(`
+        SELECT SUBSTR(Date, 1, 10) as dateStr, SUM(ABS(Amount)) as amount
+        FROM Expense
+        WHERE Date LIKE ? AND Amount < 0
+        GROUP BY SUBSTR(Date, 1, 10)
+        ORDER BY dateStr
+    `).all(currentMonth + '%') as { dateStr: string; amount: number }[];
+    
+    const dailySpending = dailySpendingRaw.map(d => ({
+        day: parseInt(d.dateStr.substring(8, 10), 10),
+        amount: d.amount
+    }));
+
+    let cumulativeSpending = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+        const daySpending = dailySpending.find(d => d.day === day);
+        if (daySpending) {
+            cumulativeSpending += daySpending.amount;
+        }
+        const timeProgress = (day / daysInMonth) * 100;
+        const budgetProgress = monthlyBudget > 0 ? (cumulativeSpending / monthlyBudget) * 100 : 0;
+        budgetBurnRate.push({
+            day,
+            timeProgress: Math.round(timeProgress * 10) / 10,
+            budgetProgress: Math.round(budgetProgress * 10) / 10
+        });
+    }
+
     // Last Updated from file system
     const dbStats = fs.statSync(dbPath);
     const lastUpdated = dbStats.mtime.toISOString();
@@ -306,7 +343,7 @@ export function getDashboardData(): DashboardStats {
         largestExpense: largestExpenseRes.max || 0,
         totalIncome, totalExpenses,
         recentExpenses, topExpenses, spendingByCategory, categoryBudgets: categoryBudgetsWithPercentage,
-        spendingTrend, monthlyOverview, weekdayPattern, categoryTrends, runningBalance, hourlyPattern,
+        spendingTrend, monthlyOverview, weekdayPattern, categoryTrends, runningBalance, hourlyPattern, budgetBurnRate,
         transactionCount, categoryCount, firstTransactionDate, daysSinceFirstTransaction, lastUpdated
     };
 }

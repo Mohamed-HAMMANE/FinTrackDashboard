@@ -42,6 +42,7 @@ interface DashboardData {
     categoryTrends: { name: string; current: number; previous: number; change: number }[];
     runningBalance: { date: string; balance: number }[];
     hourlyPattern: { hour: number; amount: number; count: number }[];
+    budgetBurnRate: { day: number; timeProgress: number; budgetProgress: number }[];
     transactionCount: number;
     categoryCount: number;
     firstTransactionDate: string;
@@ -183,12 +184,12 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
 
             {/* Charts Row 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Trend Chart */}
+                {/* Budget Burn Rate Chart */}
                 <div className="lg:col-span-2 glass-card p-6 pb-6 flex flex-col">
                     <div className="flex items-center justify-between mb-6">
                         <div>
-                            <h3 className="text-lg font-semibold text-[var(--foreground)]">Spending Trend</h3>
-                            <p className="text-sm text-[var(--foreground-muted)]">Last 30 days activity</p>
+                            <h3 className="text-lg font-semibold text-[var(--foreground)]">Budget Burn Rate</h3>
+                            <p className="text-sm text-[var(--foreground-muted)]">Time progress vs. budget progress</p>
                         </div>
                         <Link href="/analytics" className="btn btn-ghost text-xs">
                             View Details <ChevronRight className="w-4 h-4" />
@@ -197,12 +198,15 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                     <div className="flex-1 min-h-[220px]">
                         {isMounted && (
                             <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={data.spendingTrend} margin={{ bottom: 20 }}>
+                                <ComposedChart data={data.budgetBurnRate} margin={{ bottom: 20, top: 10 }}>
                                     <defs>
-                                        <linearGradient id="spendGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#818cf8" stopOpacity={0.3} />
-                                            <stop offset="50%" stopColor="#6366f1" stopOpacity={0.1} />
-                                            <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                                        <linearGradient id="timeGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.2} />
+                                            <stop offset="100%" stopColor="#06b6d4" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="budgetGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#ef4444" stopOpacity={0.2} />
+                                            <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
                                         </linearGradient>
                                         <filter id="lineGlow" height="200%" width="200%" x="-50%" y="-50%">
                                             <feGaussianBlur stdDeviation="2" result="coloredBlur" />
@@ -213,42 +217,85 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                                         </filter>
                                     </defs>
                                     <XAxis
-                                        dataKey="date"
+                                        dataKey="day"
                                         axisLine={false}
                                         tickLine={false}
                                         tick={{ fill: '#6b6b80', fontSize: 10 }}
-                                        minTickGap={15}
-                                        tickFormatter={(str) => {
-                                            const d = new Date(str);
-                                            return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-                                        }}
+                                        domain={[1, 'dataMax']}
+                                        tickFormatter={(value) => `Day ${value}`}
                                     />
-                                    <YAxis hide />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#6b6b80', fontSize: 10 }}
+                                        domain={[0, 100]}
+                                        tickFormatter={(value) => `${value}%`}
+                                    />
                                     <Tooltip
-                                        content={<ChartTooltip />}
+                                        content={({ active, payload, label }) => {
+                                            if (!active || !payload?.length) return null;
+                                            return (
+                                                <div className="chart-tooltip">
+                                                    <p className="text-xs text-[var(--foreground-muted)] mb-1">Day {label}</p>
+                                                    {payload.map((e: any, i: number) => (
+                                                        <p key={i} className="text-sm font-semibold" style={{ color: e.color }}>
+                                                            {e.name}: {e.value.toFixed(1)}%
+                                                        </p>
+                                                    ))}
+                                                </div>
+                                            );
+                                        }}
                                         cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
                                     />
                                     <Area
                                         type="monotone"
-                                        dataKey="amount"
+                                        dataKey="timeProgress"
+                                        name="Time Progress"
                                         stroke="none"
-                                        fill="url(#spendGradient)"
+                                        fill="url(#timeGradient)"
                                         fillOpacity={1}
-                                        tooltipType="none"
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="budgetProgress"
+                                        name="Budget Progress"
+                                        stroke="none"
+                                        fill="url(#budgetGradient)"
+                                        fillOpacity={1}
                                     />
                                     <Line
                                         type="monotone"
-                                        dataKey="amount"
-                                        name="Spent"
-                                        stroke="#818cf8"
+                                        dataKey="timeProgress"
+                                        name="Time Progress"
+                                        stroke="#06b6d4"
+                                        strokeWidth={2.5}
+                                        dot={false}
+                                        strokeDasharray="5 5"
+                                        activeDot={{ r: 5, stroke: '#06b6d4', strokeWidth: 2, fill: '#06b6d4' }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="budgetProgress"
+                                        name="Budget Progress"
+                                        stroke="#ef4444"
                                         strokeWidth={3}
                                         dot={false}
-                                        activeDot={{ r: 6, stroke: '#818cf8', strokeWidth: 0, fill: '#fff', style: { filter: 'url(#lineGlow)' } }}
+                                        activeDot={{ r: 6, stroke: '#ef4444', strokeWidth: 2, fill: '#fff', style: { filter: 'url(#lineGlow)' } }}
                                         style={{ filter: 'url(#lineGlow)' }}
                                     />
                                 </ComposedChart>
                             </ResponsiveContainer>
                         )}
+                    </div>
+                    <div className="flex items-center gap-6 mt-4 pt-4 border-t border-white/5">
+                        <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-cyan-500" />
+                            <span className="text-xs text-[var(--foreground-muted)]">Time Progress</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-red-500" />
+                            <span className="text-xs text-[var(--foreground-muted)]">Budget Progress</span>
+                        </div>
                     </div>
                 </div>
 
