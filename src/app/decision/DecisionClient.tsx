@@ -106,7 +106,18 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
     const debtDifference = data.freedom.actualDebtPaid - (simulatedDebtPayment ?? data.freedom.actualDebtPaid);
     const virtualADA = data.ada + (debtDifference / daysRemaining);
 
-    const adaColor = (simulatedDebtPayment !== null ? virtualADA : data.ada) < 0 ? 'text-red-500' : 'text-emerald-400';
+    const simulatedDebtValue = simulatedDebtPayment ?? data.freedom.actualDebtPaid;
+    const debtSliderMax = Math.max(data.freedom.monthlyDebtTarget, data.freedom.actualDebtPaid, 0);
+    const debtStep = debtSliderMax > 0 ? Math.max(1, Math.round(debtSliderMax / 20)) : 1;
+    const hasDebtSimulation = debtSliderMax > 0;
+    const actualDebtPct = debtSliderMax > 0 ? Math.min(100, Math.max(0, (data.freedom.actualDebtPaid / debtSliderMax) * 100)) : 0;
+    const isSimulatingDebt = simulatedDebtPayment !== null && simulatedDebtPayment !== data.freedom.actualDebtPaid;
+
+    const effectiveADA = simulatedDebtPayment !== null ? virtualADA : data.ada;
+    const isNegativeADA = effectiveADA < 0;
+    const adaColor = isNegativeADA ? 'text-red-500' : 'text-emerald-400';
+    const adaReason = data.liquidity.isHardLocked ? 'Liquidity Lock' : isNegativeADA ? 'Negative ADA' : data.adaStatus === 'warning' ? 'Below Threshold' : '';
+    const adaReasonTone = data.liquidity.isHardLocked || isNegativeADA ? 'text-red-400' : 'text-amber-400';
 
     return (
         <div className="p-6 lg:p-8 space-y-8 animate-fade-in max-w-7xl mx-auto relative">
@@ -199,6 +210,11 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                                     </div>
                                 )}
                             </div>
+                            {adaReason && (
+                                <p className={`mt-1 text-[10px] uppercase tracking-widest ${adaReasonTone}`}>
+                                    Reason: {adaReason}
+                                </p>
+                            )}
                             <p className="text-sm font-medium text-[var(--foreground-muted)] mt-2 flex items-center gap-2">
                                 {data.liquidity.isHardLocked ? (
                                     <span className="text-red-500 flex items-center gap-1 font-bold animate-pulse"><AlertTriangle className="w-4 h-4" /> SURVIVAL LOCK: Every DH spent today puts your bills at risk.</span>
@@ -228,6 +244,50 @@ export default function DecisionClient({ data }: { data: StrategicMetrics }) {
                                 <p className="text-xs font-bold text-[var(--foreground)]">+{data.revenue.nextBoostValue} DH <span className="text-[var(--foreground-muted)] font-normal">/ 100 earned</span></p>
                             </div>
                         </div>
+
+                        {hasDebtSimulation && (
+                            <div className="relative z-10 mt-4 pt-4 border-t border-white/5">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[10px] uppercase text-[var(--foreground-muted)] font-bold tracking-wider">Debt Simulation</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSimulatedDebtPayment(null)}
+                                        className="text-[10px] font-semibold text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+                                    >
+                                        Reset
+                                    </button>
+                                </div>
+                                <div className="mt-2 relative">
+                                    <div className="absolute left-0 right-0 top-1.5 h-1 rounded-full bg-white/5 pointer-events-none" />
+                                    <div
+                                        className="absolute top-0 h-4 w-px bg-white/40 pointer-events-none"
+                                        style={{ left: `${actualDebtPct}%` }}
+                                    />
+                                    <input
+                                        type="range"
+                                        min={0}
+                                        max={debtSliderMax}
+                                        step={debtStep}
+                                        value={simulatedDebtValue}
+                                        onChange={(e) => setSimulatedDebtPayment(Number(e.target.value))}
+                                        className="w-full accent-emerald-400"
+                                    />
+                                </div>
+                                <div className="mt-1 flex items-center justify-between text-[10px] text-[var(--foreground-muted)]">
+                                    <span>0</span>
+                                    <span>Target {formatCurrency(data.freedom.monthlyDebtTarget)}</span>
+                                </div>
+                                <div className="mt-2 text-xs text-[var(--foreground)]">
+                                    Simulated Paid: <span className="font-bold">{formatCurrency(simulatedDebtValue)}</span>
+                                    <span className={`ml-2 ${isSimulatingDebt ? 'text-amber-300' : 'text-[var(--foreground-muted)]'}`}>
+                                        Actual: {formatCurrency(data.freedom.actualDebtPaid)}
+                                    </span>
+                                    {isSimulatingDebt && (
+                                        <span className="ml-2 text-[10px] text-amber-300 uppercase tracking-wider">Simulating</span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Next Month Forecast */}

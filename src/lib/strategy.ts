@@ -188,8 +188,9 @@ export function getStrategicMetrics(): StrategicMetrics {
     leakDetails.sort((a, b) => b.total - a.total);
 
     const totalDeficit = deficitCarryOver + (ada < 0 ? Math.abs(ada * daysRemaining) : 0);
-    const monthsToRecover = totalDeficit > 0 && dna.recoveryTargetIncome > 0 ? (totalDeficit / dna.recoveryTargetIncome) : 0;
-    const sensitivity = (100 / dna.recoveryTargetIncome) * 30;
+    const recoveryTargetIncome = dna.recoveryTargetIncome;
+    const monthsToRecover = totalDeficit > 0 && recoveryTargetIncome > 0 ? (totalDeficit / recoveryTargetIncome) : 0;
+    const sensitivity = recoveryTargetIncome > 0 ? (100 / recoveryTargetIncome) * 30 : 0;
 
     const narratives = [
         `You could have paid for ${Math.floor(theftTotal / 1150)} months of School.`,
@@ -284,9 +285,11 @@ export function getStrategicMetrics(): StrategicMetrics {
     else if (lifestyleRatio > 30) grade = 'B';
     if (ada < 0) grade = 'F';
 
+    const adaStatus = isHardLocked || ada < 0 ? 'crisis' : ada < dna.adaThreshold ? 'warning' : 'optimal';
+
     return {
         ada,
-        adaStatus: ada < dna.adaThreshold ? 'warning' : 'optimal',
+        adaStatus,
         velocity: { timePct, moneyPct, status: velocityStatus },
         ironBuffer,
         theft: { total: theftTotal, impactDays, impactNarrative, dopamineSwap },
