@@ -137,6 +137,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
         setIsMounted(true);
     }, []);
 
+    const formatAxisCompact = (value: number) => formatCompactCurrency(value).replace(' DH', '');
     const budgetPct = data.monthlyBudget > 0 ? Math.round((data.monthlySpending / data.monthlyBudget) * 100) : 0;
     const isOverBudget = budgetPct > 100;
     const budgetColor = isOverBudget ? "#ef4444" : budgetPct > 80 ? "#f59e0b" : "#10b981";
@@ -381,9 +382,9 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
             </div>
 
             {/* Charts Row 2 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Income vs Expenses */}
-                <div className="glass-card p-6 pb-3">
+                <div className="glass-card p-6 pb-3 lg:col-span-2">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-lg font-semibold text-[var(--foreground)]">Cash Flow</h3>
@@ -399,7 +400,14 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                             <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart data={data.monthlyOverview}>
                                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#6b6b80', fontSize: 11 }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b6b80', fontSize: 11 }} tickFormatter={v => formatCompactCurrency(v)} />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#6b6b80', fontSize: 11 }}
+                                        tickFormatter={formatAxisCompact}
+                                        width={70}
+                                        label={{ value: 'DH', position: 'insideTopLeft', offset: 0, fill: '#6b6b80', fontSize: 10 }}
+                                    />
                                     <Tooltip content={<ChartTooltip />} />
                                     <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
                                     <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
