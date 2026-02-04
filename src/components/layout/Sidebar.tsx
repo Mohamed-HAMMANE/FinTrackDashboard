@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     LayoutDashboard, Receipt, BarChart3, Target, FileText,
-    Wallet, Shield
+    Wallet, Shield, Layers
 } from "lucide-react";
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
     { href: "/decision", label: "Command Center", icon: Shield },
     { href: "/transactions", label: "Transactions", icon: Receipt },
     { href: "/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/categories", label: "Categories", icon: Layers },
     { href: "/budgets", label: "Budgets", icon: Target },
     { href: "/reports", label: "Reports", icon: FileText },
 ];
