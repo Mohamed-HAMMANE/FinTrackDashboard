@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from "react";
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-    AreaChart, Area, PieChart, Pie, Cell, ComposedChart, Line
+    AreaChart, Area, PieChart, Pie, Cell, ComposedChart, Line, ReferenceLine
 } from "recharts";
-import { TrendingUp, TrendingDown, BarChart3, Clock, Calendar, Activity, Zap, DollarSign } from "lucide-react";
+import { TrendingUp, TrendingDown, Clock, Calendar, Activity, Zap, DollarSign } from "lucide-react";
 import { formatCurrency, formatCompactCurrency, formatNumber } from "@/lib/utils";
 
 const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16", "#14b8a6", "#f97316"];
@@ -19,27 +19,70 @@ interface Props {
     totalTransactions: number;
     avgTransaction: number;
     maxExpense: number;
+    regime: {
+        dailySpend: { date: string; amount: number; rolling7: number }[];
+        detected: boolean;
+        rising: boolean;
+        shiftStartDate: string | null;
+        baselineAvg: number;
+        recentAvg: number;
+        changePct: number;
+        drivers: { name: string; baselinePerDay: number; recentPerDay: number; deltaPerDay: number }[];
+        newRecurring: { category: string; comment: string; recentCount: number; recentTotal: number; firstSeen: string }[];
+    };
 }
 
-const ChartTooltip = ({ active, payload, label }: any) => {
+type TooltipEntry = { name?: string; value?: number | string; color?: string };
+type TooltipPropsLite = { active?: boolean; payload?: TooltipEntry[]; label?: string | number };
+
+const ChartTooltip = ({ active, payload, label }: TooltipPropsLite) => {
     if (!active || !payload?.length) return null;
     return (
         <div className="chart-tooltip">
             <p className="text-xs text-[var(--foreground-muted)] mb-1">{label}</p>
-            {payload.map((e: any, i: number) => (
-                <p key={i} className="text-sm font-semibold" style={{ color: e.color }}>{e.name}: {formatCurrency(e.value)}</p>
+            {payload.map((e, i) => (
+                <p key={i} className="text-sm font-semibold" style={{ color: e.color }}>
+                    {e.name}: {formatCurrency(Number(e.value) || 0)}
+                </p>
             ))}
         </div>
     );
 };
 
-export default function AnalyticsClient({ monthlyData, categoryTrends, weekdayPattern, hourlyPattern, topCategories, totalTransactions, avgTransaction, maxExpense }: Props) {
+const parseYMD = (s: string) => {
+    const [y, m, d] = s.split("-").map(n => parseInt(n, 10));
+    return new Date(y, (m || 1) - 1, d || 1);
+};
+
+const RegimeTooltip = ({ active, payload, label }: TooltipPropsLite) => {
+    if (!active || !payload?.length) return null;
+    const dt = typeof label === "string" ? parseYMD(label) : null;
+    const nice = dt ? dt.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : String(label);
+    return (
+        <div className="chart-tooltip">
+            <p className="text-xs text-[var(--foreground-muted)] mb-1">{nice}</p>
+            {payload.map((e, i) => (
+                <p key={i} className="text-sm font-semibold" style={{ color: e.color }}>
+                    {e.name}: {formatCurrency(Number(e.value) || 0)}
+                </p>
+            ))}
+        </div>
+    );
+};
+
+export default function AnalyticsClient({ monthlyData, categoryTrends, weekdayPattern, hourlyPattern, topCategories, totalTransactions, avgTransaction, maxExpense, regime }: Props) {
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {
-        setIsMounted(true);
+        const id = requestAnimationFrame(() => setIsMounted(true));
+        return () => cancelAnimationFrame(id);
     }, []);
 
     const totalSpent = topCategories.reduce((sum, c) => sum + c.total, 0);
+    const shiftTone = !regime.detected ? "text-[var(--foreground-muted)]" : regime.rising ? "text-red-400" : "text-emerald-400";
+    const shiftLabel = !regime.detected
+        ? "Stable"
+        : `${regime.rising ? "Up" : "Down"} since ${regime.shiftStartDate ? parseYMD(regime.shiftStartDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "recently"}`;
+    const changeLabel = regime.detected ? `${regime.changePct >= 0 ? "+" : ""}${regime.changePct.toFixed(0)}%` : "No major change";
 
     return (
         <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
@@ -203,6 +246,114 @@ export default function AnalyticsClient({ monthlyData, categoryTrends, weekdayPa
                                 </AreaChart>
                             </ResponsiveContainer>
                         )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Regime Shift Detector */}
+            <div className="glass-card p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+                    <div>
+                        <h3 className="text-lg font-semibold text-[var(--foreground)]">Regime Shift Detector</h3>
+                        <p className="text-sm text-[var(--foreground-muted)]">Finds when your recent spending pattern changes vs your baseline</p>
+                    </div>
+                    <div className={`text-xs font-semibold px-3 py-1 rounded-full border border-white/10 bg-white/5 ${shiftTone}`}>
+                        {shiftLabel} · {changeLabel}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2">
+                        <div className="h-[260px]">
+                            {isMounted && (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <ComposedChart data={regime.dailySpend}>
+                                        <XAxis
+                                            dataKey="date"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: "#6b6b80", fontSize: 10 }}
+                                            tickFormatter={(v) => parseYMD(String(v)).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                        />
+                                        <YAxis
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: "#6b6b80", fontSize: 10 }}
+                                            tickFormatter={v => formatCompactCurrency(v)}
+                                            width={70}
+                                        />
+                                        <Tooltip content={<RegimeTooltip />} />
+                                        {regime.shiftStartDate && (
+                                            <ReferenceLine
+                                                x={regime.shiftStartDate}
+                                                stroke="rgba(255,255,255,0.25)"
+                                                strokeDasharray="4 4"
+                                                label={{ value: "Shift", fill: "#6b6b80", fontSize: 10, position: "insideTop" }}
+                                            />
+                                        )}
+                                        <Bar dataKey="amount" name="Daily Spend" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={10} />
+                                        <Line type="monotone" dataKey="rolling7" name="7d Avg" stroke="#06b6d4" strokeWidth={2.5} dot={false} />
+                                    </ComposedChart>
+                                </ResponsiveContainer>
+                            )}
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                                <p className="text-[10px] uppercase tracking-wider text-[var(--foreground-muted)] mb-1">Baseline (56d avg/day)</p>
+                                <p className="text-lg font-bold text-[var(--foreground)]">{formatCurrency(regime.baselineAvg)}</p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                                <p className="text-[10px] uppercase tracking-wider text-[var(--foreground-muted)] mb-1">Recent (14d avg/day)</p>
+                                <p className="text-lg font-bold text-[var(--foreground)]">{formatCurrency(regime.recentAvg)}</p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                                <p className="text-[10px] uppercase tracking-wider text-[var(--foreground-muted)] mb-1">Delta</p>
+                                <p className={`text-lg font-bold ${regime.changePct >= 0 ? "text-red-400" : "text-emerald-400"}`}>{changeLabel}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="p-5 rounded-2xl bg-white/5 border border-white/10">
+                            <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3">Top Drivers (per day)</h4>
+                            {regime.drivers.length ? (
+                                <div className="space-y-3">
+                                    {regime.drivers.map(d => (
+                                        <div key={d.name} className="flex items-center justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium text-[var(--foreground)] truncate">{d.name}</p>
+                                                <p className="text-[10px] text-[var(--foreground-muted)]">Now {formatCompactCurrency(d.recentPerDay)} / day</p>
+                                            </div>
+                                            <p className={`text-sm font-bold tabular-nums ${d.deltaPerDay >= 0 ? "text-red-400" : "text-emerald-400"}`}>
+                                                {d.deltaPerDay >= 0 ? "+" : ""}{formatCompactCurrency(d.deltaPerDay)}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-[var(--foreground-muted)]">Not enough data to identify drivers yet.</p>
+                            )}
+                        </div>
+
+                        <div className="p-5 rounded-2xl bg-white/5 border border-white/10">
+                            <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3">New Repeating Charges (last 30d)</h4>
+                            {regime.newRecurring.length ? (
+                                <div className="space-y-3">
+                                    {regime.newRecurring.map((r, idx) => (
+                                        <div key={`${r.category}-${r.comment}-${idx}`} className="flex items-center justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium text-[var(--foreground)] truncate">{r.comment}</p>
+                                                <p className="text-[10px] text-[var(--foreground-muted)] truncate">{r.category} · {r.recentCount}x</p>
+                                            </div>
+                                            <p className="text-sm font-bold text-[var(--foreground)] tabular-nums">{formatCompactCurrency(r.recentTotal)}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-[var(--foreground-muted)]">No new repeating charges detected.</p>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
