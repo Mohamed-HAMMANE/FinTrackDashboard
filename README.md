@@ -57,7 +57,7 @@ npm run start
 
 ### 📱 Android Sync Setup
 Point your Android app's sync feature to:
-- **URL**: `http://YOUR_LOCAL_IP:3000/api/sync`
+- **URL**: `http://YOUR_LOCAL_IP:3020/api/sync`
 - **Method**: `POST`
 - **Header**: `x-api-key: your_secret_key_here`
 
